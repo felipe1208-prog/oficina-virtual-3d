@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { WorkstationFactory } from "./WorkstationFactory.js";
+import { fitModel } from "../utils/modelUtils.js";
 import { AGENT_STATIONS, ZONE_PROPS } from "../../config/officeLayout.js";
 
 export class World {
@@ -28,52 +29,81 @@ export class World {
   initKitchenZone() {
     const { coffeeMachine, waterCooler, trashcan } = ZONE_PROPS.kitchen;
 
-    this.placeModel("coffeeMachine", coffeeMachine.position, 0.9);
-    this.placeModel("waterCooler", waterCooler.position, 1.0);
-    this.placeModel("trashcan", trashcan.position, 0.8);
+    // Cafetera (0.42m de alto)
+    this.placeFittedModel("coffeeMachine", coffeeMachine.position, {
+      height: 0.42,
+    });
+
+    // Dispensador de agua (1.45m de alto)
+    this.placeFittedModel("waterCooler", waterCooler.position, {
+      height: 1.45,
+    });
+
+    // Papelera (0.40m de alto)
+    this.placeFittedModel("trashcan", trashcan.position, { height: 0.4 });
   }
 
   initLoungeZone() {
     const { pingPongTable, couchMedium, tvScreen, coffeeTable } =
       ZONE_PROPS.lounge;
 
-    this.placeModel("pingPongTable", pingPongTable.position, 1.0);
-    this.placeModel("couchMedium", couchMedium.position, 1.0, -Math.PI / 2);
-    this.placeModel("tvScreen", tvScreen.position, 1.0, Math.PI / 2);
-    this.placeModel("coffeeTable", coffeeTable.position, 0.85);
-  }
+    // Mesa de Ping-Pong (longitud de 2.74m)
+    this.placeFittedModel("pingPongTable", pingPongTable.position, {
+      width: 2.74,
+    });
 
-  initEnvironmentProps() {
-    // Ventilador de techo
-    const fanModel = this.resources.get("ceilingFan");
-    if (fanModel) {
-      this.workstationFactory.normalizeMaterials(fanModel);
-      fanModel.position.set(0, 4.2, 0);
-      fanModel.scale.setScalar(1.2);
-      this.scene.add(fanModel);
-      this.ceilingFan = fanModel;
-    }
+    // Sofá mediano (ancho de 1.9m) rotado hacia el frente
+    this.placeFittedModel(
+      "couchMedium",
+      couchMedium.position,
+      { width: 1.9 },
+      -Math.PI / 2,
+    );
 
-    // Plantas decorativas
-    ZONE_PROPS.environment.houseplants.forEach((plant) => {
-      this.placeModel("houseplant", plant.position, plant.scale);
+    // Televisor (ancho de 1.2m)
+    this.placeFittedModel(
+      "tvScreen",
+      { ...tvScreen.position, y: 0.6 },
+      { width: 1.2 },
+      Math.PI / 2,
+    );
+
+    // Mesa de centro (alto de 0.42m)
+    this.placeFittedModel("coffeeTable", coffeeTable.position, {
+      height: 0.42,
     });
   }
 
-  placeModel(assetKey, position, scale = 1, rotationY = 0) {
-    const model = this.resources.get(assetKey);
-    if (!model) return;
+  initEnvironmentProps() {
+    // Ventilador de techo centrado a 4.5m de altura (diámetro 1.3m)
+    const fanRaw = this.resources.get("ceilingFan");
+    if (fanRaw) {
+      this.workstationFactory.normalizeMaterials(fanRaw);
+      const fan = fitModel(fanRaw, { width: 1.3 });
+      fan.position.set(0, 4.5, 0);
+      this.scene.add(fan);
+      this.ceilingFan = fan;
+    }
 
-    this.workstationFactory.normalizeMaterials(model);
-    model.position.set(position.x, position.y, position.z);
+    // Plantas decorativas (alto 0.85m)
+    ZONE_PROPS.environment.houseplants.forEach((plant) => {
+      this.placeFittedModel("houseplant", plant.position, { height: 0.85 });
+    });
+  }
+
+  placeFittedModel(assetKey, position, dimensions, rotationY = 0) {
+    const raw = this.resources.get(assetKey);
+    if (!raw) return;
+
+    this.workstationFactory.normalizeMaterials(raw);
+    const model = fitModel(raw, dimensions);
+    model.position.set(position.x, position.y || 0, position.z);
     model.rotation.y = rotationY;
-    model.scale.setScalar(scale);
     this.scene.add(model);
     return model;
   }
 
   update(delta) {
-    // Rotación suave del ventilador de techo
     if (this.ceilingFan) {
       this.ceilingFan.rotation.y += 0.8 * delta;
     }
