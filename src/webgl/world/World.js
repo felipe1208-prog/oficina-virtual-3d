@@ -33,12 +33,12 @@ export class World {
 
   initKitchenZone() {
     const { coffeeMachine, waterCooler, trashcan } = ZONE_PROPS.kitchen;
+
     this.placeFittedModel("coffeeMachine", coffeeMachine.position, {
       height: 0.42,
     });
-    this.placeFittedModel("waterCooler", waterCooler.position, {
-      height: 1.45,
-    });
+    // Ancho métrico real de 38cm (evita el bloque gigante)
+    this.placeFittedModel("waterCooler", waterCooler.position, { width: 0.38 });
     this.placeFittedModel("trashcan", trashcan.position, { height: 0.4 });
   }
 

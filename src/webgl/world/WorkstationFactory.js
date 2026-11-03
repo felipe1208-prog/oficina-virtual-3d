@@ -40,47 +40,65 @@ export class WorkstationFactory {
     stationGroup.rotation.y = config.rotation.y;
     stationGroup.userData = { agentId: config.id, config };
 
-    const DESK_HEIGHT = 0.75;
+    const DESK_HEIGHT = 0.71;
+    const WORK_X = -0.15;
+    const SEAT_Z = 0.46;
+    const MONITOR_Z = -0.32;
 
-    // 1. Escritorio en L (orientación natural con ala a la izquierda)
+    // 1. Escritorio en L
     const deskRaw = this.resources.get("desk");
     if (deskRaw) {
       this.normalizeMaterials(deskRaw);
       const desk = fitModel(deskRaw, { height: DESK_HEIGHT });
-      desk.rotation.y = Math.PI / 2;
+      desk.rotation.y = -Math.PI / 2;
       desk.position.set(0, 0, 0);
       desk.userData = { agentId: config.id, type: "desk" };
       stationGroup.add(desk);
     }
 
-    // 2. Monitor (centrado al fondo frente a la silla)
+    // 2. Configuración Dual Monitor Cóncava (fija al fondo)
     const monitorRaw = this.resources.get("monitor");
     if (monitorRaw) {
-      this.normalizeMaterials(monitorRaw);
-      const monitor = fitModel(monitorRaw, { height: 0.45 });
-      monitor.rotation.y = 0;
-      monitor.position.set(0, DESK_HEIGHT, -0.2);
-      monitor.userData = { agentId: config.id, type: "screen" };
-      stationGroup.add(monitor);
+      const monitorLeft = fitModel(monitorRaw, { height: 0.44 });
+      this.normalizeMaterials(monitorLeft);
+      monitorLeft.rotation.y = Math.PI + 0.28;
+      monitorLeft.position.set(WORK_X - 0.26, DESK_HEIGHT, MONITOR_Z);
+      monitorLeft.userData = { agentId: config.id, type: "screen-left" };
+      stationGroup.add(monitorLeft);
+
+      const monitorRight = fitModel(this.resources.get("monitor"), {
+        height: 0.44,
+      });
+      this.normalizeMaterials(monitorRight);
+      monitorRight.rotation.y = Math.PI - 0.28;
+      monitorRight.position.set(WORK_X + 0.26, DESK_HEIGHT, MONITOR_Z);
+      monitorRight.userData = { agentId: config.id, type: "screen-right" };
+      stationGroup.add(monitorRight);
     }
 
-    // 3. Teclado
+    // 3. Teclado adelantado a Z = -0.065m (alineado con la caída de dedos)
     const keyboardRaw = this.resources.get("keyboard");
     if (keyboardRaw) {
       this.normalizeMaterials(keyboardRaw);
-      const keyboard = fitModel(keyboardRaw, { width: 0.42 });
+      const keyboard = fitModel(keyboardRaw, { width: 0.38 });
       keyboard.rotation.y = 0;
-      keyboard.position.set(-0.04, DESK_HEIGHT + 0.002, 0.1);
+      keyboard.position.set(WORK_X, DESK_HEIGHT + 0.003, -0.065);
       stationGroup.add(keyboard);
     }
 
-    // 4. Mousepad y Mouse
+    // 4. Mousepad y Mouse en su zona ergonómica habitual (Z = 0.06m)
     const mousepadRaw = this.resources.get("mousepad");
     if (mousepadRaw) {
       this.normalizeMaterials(mousepadRaw);
-      const mousepad = fitModel(mousepadRaw, { width: 0.24 });
+      const mousepad = fitModel(mousepadRaw, { width: 0.22 });
       mousepad.rotation.y = 0;
-      mousepad.position.set(0.26, DESK_HEIGHT + 0.002, 0.1);
+      mousepad.position.set(WORK_X + 0.32, DESK_HEIGHT + 0.005, 0.06);
+      mousepad.traverse((c) => {
+        if (c.isMesh && c.material) {
+          c.material = c.material.clone();
+          c.material.color.set("#272E3E");
+        }
+      });
       stationGroup.add(mousepad);
     }
 
@@ -88,26 +106,25 @@ export class WorkstationFactory {
     if (mouseRaw) {
       this.normalizeMaterials(mouseRaw);
       const mouse = fitModel(mouseRaw, { maxDim: 0.11 });
-      mouse.rotation.y = 0;
-      mouse.position.set(0.26, DESK_HEIGHT + 0.005, 0.1);
+      mouse.rotation.y = Math.PI;
+      mouse.position.set(WORK_X + 0.32, DESK_HEIGHT + 0.009, 0.06);
       stationGroup.add(mouse);
     }
 
-    // 5. Silla de oficina (centrada en X = 0, orientada al monitor)
+    // 5. Silla de oficina
     const chairRaw = this.resources.get("chair");
     if (chairRaw) {
       this.normalizeMaterials(chairRaw);
-      const chair = fitModel(chairRaw, { height: 0.95 });
-      chair.rotation.y = -Math.PI / 2;
-      chair.position.set(0, 0, 0.6);
+      const chair = fitModel(chairRaw, { height: 0.9 });
+      chair.rotation.y = Math.PI;
+      chair.position.set(WORK_X, 0, SEAT_Z);
       stationGroup.add(chair);
     }
 
-    // 6. Personaje Animado Autónomo con AnimationMixer y FBX
+    // 6. Personaje Animado Autónomo
     let agentCharacter = null;
     const characterMesh = this.resources.getSkinned("character");
 
-    // Extraer clips de los archivos FBX
     const typingClips = this.resources.getAnimations("animTyping");
     const sitToTypeClips = this.resources.getAnimations("animSitToType");
     const typeToSitClips = this.resources.getAnimations("animTypeToSit");
@@ -121,6 +138,7 @@ export class WorkstationFactory {
     if (characterMesh) {
       this.normalizeMaterials(characterMesh);
       agentCharacter = new AgentCharacter(config, characterMesh, rawClips);
+      agentCharacter.model.position.set(WORK_X, -0.02, SEAT_Z);
       stationGroup.add(agentCharacter.model);
     }
 
@@ -132,7 +150,7 @@ export class WorkstationFactory {
     });
     const marker = new THREE.Mesh(markerGeo, markerMat);
     marker.rotation.x = -Math.PI / 2;
-    marker.position.y = 0.012;
+    marker.position.set(WORK_X, 0.012, 0.16);
     stationGroup.add(marker);
 
     return {
