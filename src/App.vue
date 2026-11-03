@@ -18,9 +18,9 @@ onMounted(() => {
 
   resources.addEventListener("ready", () => {
     isReady.value = true;
-    // Inicializar el motor 3D una vez los recursos están en caché
     if (canvasRef.value) {
-      experience = new Experience(canvasRef.value);
+      // Inyectar recursos cargados directamente a la experiencia
+      experience = new Experience(canvasRef.value, resources);
     }
   });
 
@@ -36,10 +36,8 @@ onBeforeUnmount(() => {
   <main
     class="w-full h-screen relative bg-slate-950 overflow-hidden font-sans select-none"
   >
-    <!-- Canvas 3D -->
     <canvas ref="canvasRef" class="w-full h-full block outline-none" />
 
-    <!-- Pantalla de carga sobria y minimalista -->
     <div
       v-if="!isReady"
       class="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center p-6 z-50"

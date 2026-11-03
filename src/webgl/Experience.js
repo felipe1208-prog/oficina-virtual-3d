@@ -2,19 +2,20 @@ import * as THREE from "three";
 import { Sizes } from "./core/Sizes.js";
 import { Camera } from "./core/Camera.js";
 import { Renderer } from "./core/Renderer.js";
+import { World } from "./world/World.js";
 import { OFFICE_BOUNDS } from "../config/officeLayout.js";
 
 let instance = null;
 
 export class Experience {
-  constructor(canvas = null) {
-    // Patrón Singleton para acceder a la experiencia globalmente
+  constructor(canvas = null, resources = null) {
     if (instance) return instance;
     instance = this;
 
     this.canvas = canvas;
+    this.resources = resources;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color("#0F1219"); // Fondo neutro mate
+    this.scene.background = new THREE.Color("#0F1219");
 
     this.sizes = new Sizes(this.canvas.parentElement);
     this.camera = new Camera(this);
@@ -23,33 +24,30 @@ export class Experience {
     this.initLighting();
     this.initBaseEnvironment();
 
-    // Enlazar eventos de redimensionado
+    // Instanciar el mundo con las estaciones y objetos
+    this.world = new World(this);
+
     this.sizes.addEventListener("resize", () => {
       this.camera.resize();
       this.renderer.resize();
     });
 
-    // Bucle de animación (Tick)
     this.clock = new THREE.Clock();
     this.tick = this.tick.bind(this);
     this.animationFrameId = requestAnimationFrame(this.tick);
   }
 
   initLighting() {
-    // 1. Luz ambiental para visibilidad uniforme de geometrías
-    const ambientLight = new THREE.AmbientLight("#E8ECF5", 0.9);
+    const ambientLight = new THREE.AmbientLight("#E8ECF5", 0.85);
     this.scene.add(ambientLight);
 
-    // 2. Luz hemisférica: contraste sutil entre luz de techo y rebote de suelo
-    const hemiLight = new THREE.HemisphereLight("#FFFFFF", "#242B3B", 0.5);
+    const hemiLight = new THREE.HemisphereLight("#FFFFFF", "#242B3B", 0.45);
     this.scene.add(hemiLight);
 
-    // 3. Luz direccional principal (simula ventanales)
-    this.sunLight = new THREE.DirectionalLight("#FFF9F0", 1.6);
+    this.sunLight = new THREE.DirectionalLight("#FFF9F0", 1.7);
     this.sunLight.position.set(16, 22, 12);
     this.sunLight.castShadow = true;
 
-    // Optimización de la caja de sombra para cubrir exactamente la oficina
     this.sunLight.shadow.mapSize.width = 2048;
     this.sunLight.shadow.mapSize.height = 2048;
     this.sunLight.shadow.camera.near = 0.5;
@@ -66,7 +64,6 @@ export class Experience {
   }
 
   initBaseEnvironment() {
-    // Plataforma base de la oficina
     const floorGeo = new THREE.BoxGeometry(
       OFFICE_BOUNDS.width,
       OFFICE_BOUNDS.height,
@@ -74,7 +71,7 @@ export class Experience {
     );
     const floorMat = new THREE.MeshStandardMaterial({
       color: OFFICE_BOUNDS.floorColor,
-      roughness: 0.85,
+      roughness: 0.9,
       metalness: 0.05,
       flatShading: true,
     });
@@ -84,7 +81,6 @@ export class Experience {
     floor.receiveShadow = true;
     this.scene.add(floor);
 
-    // Cuadrícula sutil de referencia arquitectónica
     const grid = new THREE.GridHelper(
       Math.max(OFFICE_BOUNDS.width, OFFICE_BOUNDS.depth),
       Math.max(OFFICE_BOUNDS.width, OFFICE_BOUNDS.depth),
@@ -96,6 +92,13 @@ export class Experience {
   }
 
   tick() {
+    const delta = this.clock.getDelta();
+
+    // Actualizar animaciones del mundo (rotación de aspas, etc.)
+    if (this.world) {
+      this.world.update(delta);
+    }
+
     this.camera.update();
     this.renderer.update();
     this.animationFrameId = requestAnimationFrame(this.tick);
