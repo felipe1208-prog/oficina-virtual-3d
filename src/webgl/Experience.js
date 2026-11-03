@@ -3,17 +3,20 @@ import { Sizes } from "./core/Sizes.js";
 import { Camera } from "./core/Camera.js";
 import { Renderer } from "./core/Renderer.js";
 import { World } from "./world/World.js";
-import { OFFICE_BOUNDS } from "../config/officeLayout.js";
+import { RaycasterHandler } from "./interactions/Raycaster.js";
+import { OFFICE_BOUNDS, AGENT_STATIONS } from "../config/officeLayout.js";
 
 let instance = null;
 
 export class Experience {
-  constructor(canvas = null, resources = null) {
+  constructor(canvas = null, resources = null, onSelectStation = null) {
     if (instance) return instance;
     instance = this;
 
     this.canvas = canvas;
     this.resources = resources;
+    this.onSelectStation = onSelectStation;
+
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color("#0F1219");
 
@@ -24,8 +27,12 @@ export class Experience {
     this.initLighting();
     this.initBaseEnvironment();
 
-    // Instanciar el mundo con las estaciones y objetos
     this.world = new World(this);
+
+    // Manejador de clics
+    this.raycasterHandler = new RaycasterHandler(this, (agentId) => {
+      this.handleStationSelect(agentId);
+    });
 
     this.sizes.addEventListener("resize", () => {
       this.camera.resize();
@@ -35,6 +42,19 @@ export class Experience {
     this.clock = new THREE.Clock();
     this.tick = this.tick.bind(this);
     this.animationFrameId = requestAnimationFrame(this.tick);
+  }
+
+  handleStationSelect(agentId) {
+    if (agentId && AGENT_STATIONS[agentId]) {
+      const stationPos = AGENT_STATIONS[agentId].position;
+      this.camera.focusOn(stationPos);
+    } else {
+      this.camera.resetView();
+    }
+
+    if (this.onSelectStation) {
+      this.onSelectStation(agentId);
+    }
   }
 
   initLighting() {
@@ -93,12 +113,7 @@ export class Experience {
 
   tick() {
     const delta = this.clock.getDelta();
-
-    // Actualizar animaciones del mundo (rotación de aspas, etc.)
-    if (this.world) {
-      this.world.update(delta);
-    }
-
+    if (this.world) this.world.update(delta);
     this.camera.update();
     this.renderer.update();
     this.animationFrameId = requestAnimationFrame(this.tick);
@@ -106,6 +121,7 @@ export class Experience {
 
   destroy() {
     cancelAnimationFrame(this.animationFrameId);
+    this.raycasterHandler?.destroy();
     this.sizes.destroy();
     this.camera.destroy();
     this.renderer.destroy();

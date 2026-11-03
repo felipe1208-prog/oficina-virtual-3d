@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js";
 
 export class Resources extends EventTarget {
   constructor(assetsList = []) {
@@ -14,11 +15,9 @@ export class Resources extends EventTarget {
   }
 
   initLoaders() {
-    // Configuración del decodificador Draco local
     this.dracoLoader = new DRACOLoader();
     this.dracoLoader.setDecoderPath("/draco/");
 
-    // Cargador principal GLTF/GLB
     this.gltfLoader = new GLTFLoader();
     this.gltfLoader.setDRACOLoader(this.dracoLoader);
   }
@@ -37,11 +36,7 @@ export class Resources extends EventTarget {
         },
         undefined,
         (error) => {
-          console.warn(
-            `[Resources] Error cargando asset "${asset.name}" en ${asset.path}:`,
-            error,
-          );
-          // Fallback: Genera un cubo neutro para evitar bloquear el arranque
+          console.warn(`[Resources] Error cargando "${asset.name}":`, error);
           const fallback = this.createFallbackModel(asset.name);
           this.onItemLoaded(asset.name, { scene: fallback, isFallback: true });
         },
@@ -54,7 +49,6 @@ export class Resources extends EventTarget {
     this.loaded++;
 
     const progressRatio = this.loaded / this.toLoad;
-
     this.dispatchEvent(
       new CustomEvent("progress", {
         detail: {
@@ -71,44 +65,36 @@ export class Resources extends EventTarget {
     }
   }
 
-  /**
-   * Genera un marcador visual procedural si un .glb no se encuentra
-   */
   createFallbackModel(name) {
     const group = new THREE.Group();
     group.name = `fallback-${name}`;
-
     const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0xff0055,
-      wireframe: true,
+      color: 0x444d5d,
+      roughness: 0.8,
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.y = 0.25;
     group.add(mesh);
-
     return group;
   }
 
   /**
-   * Obtiene la escena clonada de un modelo cargado
+   * Clona objetos estáticos normales (muebles, props)
    */
   get(name) {
     const resource = this.items.get(name);
-    if (!resource) {
-      console.error(`[Resources] Asset "${name}" no encontrado en la caché.`);
-      return null;
-    }
-    // Retorna un clon del objeto para permitir múltiples instancias en escena
+    if (!resource) return null;
     return resource.scene.clone(true);
   }
 
   /**
-   * Obtiene animaciones de un modelo (ej. character-hyper-casual)
+   * Clona modelos con esqueleto/huesos (personajes) sin que colapsen entre sí
    */
-  getAnimations(name) {
+  getSkinned(name) {
     const resource = this.items.get(name);
-    return resource?.animations || [];
+    if (!resource) return null;
+    return SkeletonUtils.clone(resource.scene);
   }
 
   destroy() {
