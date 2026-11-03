@@ -9,14 +9,43 @@ export class World {
     this.scene = this.experience.scene;
     this.resources = this.experience.resources;
 
-    this.workstationFactory = new WorkstationFactory(this.resources);
     this.stations = new Map();
     this.characters = new Map();
+    this.workstationFactory = new WorkstationFactory(this.resources);
 
     this.initStations();
     this.initKitchenZone();
     this.initLoungeZone();
-    this.initEnvironmentProps();
+    this.initPlants();
+  }
+
+  placeFittedModel(assetName, position, fitOptions, rotationY = 0) {
+    const raw = this.resources.get(assetName);
+    if (!raw) return null;
+
+    raw.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        if (child.material) {
+          const mats = Array.isArray(child.material)
+            ? child.material
+            : [child.material];
+          mats.forEach((m) => {
+            m.flatShading = true;
+            m.roughness = 0.85;
+            m.metalness = 0.05;
+            m.needsUpdate = true;
+          });
+        }
+      }
+    });
+
+    const model = fitModel(raw, fitOptions);
+    model.position.set(position.x, position.y, position.z);
+    model.rotation.y = rotationY;
+    this.scene.add(model);
+    return model;
   }
 
   initStations() {
@@ -25,80 +54,143 @@ export class World {
         this.workstationFactory.create(stationConfig);
       this.scene.add(group);
       this.stations.set(stationConfig.id, group);
+
       if (character) {
+        character.onStatusChange = (agentId, status) => {
+          this.experience.onAgentStatusChange?.(agentId, status);
+        };
+
+        // Proveedor de destino con selección de ranura libre para evitar sobreposiciones
+        character.destinationProvider = () =>
+          this.getWaterCoolerDestination(stationConfig.id);
         this.characters.set(stationConfig.id, character);
       }
     });
   }
 
-  initKitchenZone() {
-    const { coffeeMachine, waterCooler, trashcan } = ZONE_PROPS.kitchen;
+  getWaterCoolerDestination(requestingAgentId) {
+    const coolerPos = ZONE_PROPS.kitchen?.waterCooler?.position;
+    if (!coolerPos) return null;
 
-    this.placeFittedModel("coffeeMachine", coffeeMachine.position, {
-      height: 0.42,
-    });
-    // Ancho métrico real de 38cm (evita el bloque gigante)
-    this.placeFittedModel("waterCooler", waterCooler.position, { width: 0.38 });
-    this.placeFittedModel("trashcan", trashcan.position, { height: 0.4 });
+    // Ranuras independientes frente al dispensador (lado izquierdo, lado derecho y espera)
+    const slots = [
+      new THREE.Vector3(coolerPos.x - 0.45, 0, coolerPos.z + 0.75),
+      new THREE.Vector3(coolerPos.x + 0.45, 0, coolerPos.z + 0.75),
+      new THREE.Vector3(coolerPos.x, 0, coolerPos.z + 1.35),
+    ];
+
+    for (const slot of slots) {
+      let isOccupied = false;
+      for (const [id, char] of this.characters.entries()) {
+        if (id === requestingAgentId) continue;
+        if (
+          char.status === "BREAK" ||
+          (char.status === "WALKING" && char.roamTarget)
+        ) {
+          const charPos = char.getWorldPosition();
+          if (charPos.distanceTo(slot) < 0.5) {
+            isOccupied = true;
+            break;
+          }
+        }
+      }
+      if (!isOccupied) {
+        return { name: "Dispensador de Agua", position: slot };
+      }
+    }
+
+    return { name: "Dispensador de Agua", position: slots[0] };
+  }
+
+  checkAgentCollisions() {
+    const charList = Array.from(this.characters.values());
+
+    for (let i = 0; i < charList.length; i++) {
+      const charA = charList[i];
+      charA.isBlocked = false;
+
+      if (charA.status !== "WALKING" && charA.status !== "RETURNING") continue;
+
+      const posA = charA.getWorldPosition();
+
+      for (let j = 0; j < charList.length; j++) {
+        if (i === j) continue;
+        const charB = charList[j];
+        const posB = charB.getWorldPosition();
+        const dist = posA.distanceTo(posB);
+
+        // Si hay otro avatar a menos de 0.8m en el cono de avance, charA frena
+        if (dist < 0.8) {
+          const forward = new THREE.Vector3(0, 0, 1).applyAxisAngle(
+            new THREE.Vector3(0, 1, 0),
+            charA.model.rotation.y,
+          );
+          const toB = new THREE.Vector3().subVectors(posB, posA).normalize();
+          if (forward.dot(toB) > 0.35) {
+            charA.isBlocked = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  initKitchenZone() {
+    const kitchen = ZONE_PROPS.kitchen;
+    if (!kitchen) return;
+
+    if (kitchen.coffeeMachine) {
+      this.placeFittedModel("coffeeMachine", kitchen.coffeeMachine.position, {
+        height: 0.42,
+      });
+    }
+    if (kitchen.waterCooler) {
+      this.placeFittedModel("waterCooler", kitchen.waterCooler.position, {
+        width: 0.38,
+      });
+    }
+    if (kitchen.trashcan) {
+      this.placeFittedModel("trashcan", kitchen.trashcan.position, {
+        height: 0.4,
+      });
+    }
   }
 
   initLoungeZone() {
-    const { pingPongTable, couchMedium, tvScreen, coffeeTable } =
-      ZONE_PROPS.lounge;
-    this.placeFittedModel("pingPongTable", pingPongTable.position, {
-      width: 2.74,
-    });
-    this.placeFittedModel(
-      "couchMedium",
-      couchMedium.position,
-      { width: 1.9 },
-      -Math.PI / 2,
-    );
-    this.placeFittedModel(
-      "tvScreen",
-      { ...tvScreen.position, y: 0.6 },
-      { width: 1.2 },
-      Math.PI / 2,
-    );
-    this.placeFittedModel("coffeeTable", coffeeTable.position, {
-      height: 0.42,
-    });
-  }
+    const lounge = ZONE_PROPS.lounge;
+    if (!lounge) return;
 
-  initEnvironmentProps() {
-    const fanRaw = this.resources.get("ceilingFan");
-    if (fanRaw) {
-      this.workstationFactory.normalizeMaterials(fanRaw);
-      const fan = fitModel(fanRaw, { width: 1.3 });
-      fan.position.set(0, 4.5, 0);
-      this.scene.add(fan);
-      this.ceilingFan = fan;
+    if (lounge.sofa) {
+      this.placeFittedModel(
+        "sofa",
+        lounge.sofa.position,
+        { width: 1.8 },
+        lounge.sofa.rotation?.y || 0,
+      );
     }
-
-    ZONE_PROPS.environment.houseplants.forEach((plant) => {
-      this.placeFittedModel("houseplant", plant.position, { height: 0.85 });
-    });
+    if (lounge.coffeeTable) {
+      this.placeFittedModel("coffeeTable", lounge.coffeeTable.position, {
+        width: 0.9,
+      });
+    }
+    if (lounge.pingPongTable) {
+      this.placeFittedModel("pingPongTable", lounge.pingPongTable.position, {
+        width: 1.6,
+      });
+    }
   }
 
-  placeFittedModel(assetKey, position, dimensions, rotationY = 0) {
-    const raw = this.resources.get(assetKey);
-    if (!raw) return;
-
-    this.workstationFactory.normalizeMaterials(raw);
-    const model = fitModel(raw, dimensions);
-    model.position.set(position.x, position.y || 0, position.z);
-    model.rotation.y = rotationY;
-    this.scene.add(model);
-    return model;
+  initPlants() {
+    const plants = ZONE_PROPS.plants || [];
+    plants.forEach((plant) => {
+      this.placeFittedModel("plant", plant.position, {
+        height: plant.scale || 0.9,
+      });
+    });
   }
 
   update(delta) {
-    // 1. Rotación del ventilador
-    if (this.ceilingFan) {
-      this.ceilingFan.rotation.y += 0.8 * delta;
-    }
-
-    // 2. Actualizar la animación autónoma de cada agente
+    this.checkAgentCollisions();
     this.characters.forEach((character) => {
       character.update(delta);
     });
