@@ -3,22 +3,20 @@ export const DIORAMA_CONFIG = {
   wallThickness: 0.35,
   baseboardHeight: 0.16,
 
-  // Polígono escalonado exacto de la planta
+  // Suelo escalonado completo
   floorPolygon: [
-    { x: -12.0, z: 9.0 }, // Esquina Frontal Izquierda
-    { x: -12.0, z: -8.5 }, // Muro Oeste continuo
-    { x: -4.5, z: -8.5 }, // Muro Norte Supervisor
-    { x: -4.5, z: -9.2 }, // Retranqueo sutil hacia Sala de Reuniones
-    { x: 4.2, z: -9.2 }, // Muro Norte Sala de Reuniones
-    { x: 4.2, z: -8.5 }, // Quiebre hacia zona de Ping-Pong
-    { x: 12.0, z: -8.5 }, // Muro Norte Ping-Pong y Lounge Derecho
-    { x: 12.0, z: 3.5 }, // Cierre Muro Este
-    { x: 7.0, z: 3.5 }, // Escalón frontal Lounge
-    { x: 7.0, z: 9.0 }, // Esquina Frontal Derecha
-    { x: -12.0, z: 9.0 }, // Cierre
+    { x: -12.0, z: 9.0 },
+    { x: -12.0, z: -8.5 },
+    { x: -4.5, z: -8.5 },
+    { x: -4.5, z: -9.2 },
+    { x: 4.2, z: -9.2 },
+    { x: 4.2, z: -8.5 },
+    { x: 12.0, z: -8.5 },
+    { x: 12.0, z: 9.0 },
+    { x: -12.0, z: 9.0 },
   ],
 
-  // Muros perimetrales con ventanales panorámicos
+  // Muros perimetrales continuos con ventanales
   perimeterWalls: [
     {
       p1: { x: -12.0, z: 9.0 },
@@ -48,12 +46,15 @@ export const DIORAMA_CONFIG = {
     },
     {
       p1: { x: 12.0, z: -8.5 },
-      p2: { x: 12.0, z: 3.5 },
-      windows: [{ offset: 6.0, width: 2.8, height: 2.1 }],
+      p2: { x: 12.0, z: 9.0 },
+      windows: [
+        { offset: 4.5, width: 3.2, height: 2.1 },
+        { offset: 11.5, width: 3.2, height: 2.1 },
+      ],
     },
   ],
 
-  // Cerramientos de Cristal con fachada frontal continua en Z = -2.8
+  // Mamparas acústicas frontales alineadas a Z: -2.8
   glassRooms: {
     supervisor: {
       minX: -12.0,
@@ -71,41 +72,34 @@ export const DIORAMA_CONFIG = {
     },
   },
 
-  // Muros Interiores con orientación corregida
+  // Muros divisorios interiores
   interiorWalls: {
-    // Corre a lo largo del eje Z (paralelo al muro izquierdo)
+    // Corre paralelo a la alfombra vertical (en el eje Z), liberando la ventana
     kitchenWall: {
-      x: -2.2,
-      z: 5.2,
-      width: 0.28,
+      x: -2.0,
+      startZ: 3.2,
+      endZ: 7.8,
       height: 2.1,
-      depth: 4.6,
+      thickness: 0.28,
     },
-    // Corre a lo largo del eje X (paralelo al muro del fondo)
+    // Corre horizontal sobre X, empotrado a la pared este del lounge
     loungeTVWall: {
-      x: 7.2,
-      z: 0.8,
-      width: 5.4,
+      startX: 4.8,
+      endX: 12.0,
+      z: 0.2,
       height: 2.6,
-      depth: 0.3,
+      thickness: 0.3,
     },
   },
 
-  // Red de alfombras limpias continuas
+  // Alfombras de tránsito
   carpets: [
-    // Corredor peatonal gris grafito en L
-    { width: 2.4, length: 11.2, x: -3.4, z: 3.2, color: "#2B323D" },
-    { width: 11.5, length: 2.2, x: -1.5, z: -1.5, color: "#2B323D" },
-
-    // Alfombra azul marino de la Sala de Reuniones
-    { width: 6.8, length: 4.8, x: 0.0, z: -6.0, color: "#1B2C4E" },
-
-    // Alfombras bajo las islas de computación
-    { width: 3.8, length: 5.2, x: -8.2, z: 3.5, color: "#222832" },
-    { width: 3.4, length: 3.6, x: -8.2, z: -0.8, color: "#222832" },
-
-    // Alfombra azul marino del salón principal (Lounge)
-    { width: 7.4, length: 5.8, x: 7.0, z: 4.6, color: "#182846" },
+    { width: 2.4, length: 11.2, x: -3.3, z: 2.6, color: "#2B323D" }, // Corredor vertical
+    { width: 10.5, length: 2.2, x: -1.5, z: -1.5, color: "#2B323D" }, // Corredor horizontal
+    { width: 6.8, length: 4.8, x: 0.0, z: -6.0, color: "#1B2C4E" }, // Reuniones
+    { width: 3.8, length: 3.6, x: -8.2, z: 0.2, color: "#222832" }, // Pod 1
+    { width: 3.8, length: 3.6, x: -8.2, z: 3.8, color: "#222832" }, // Pod 2
+    { width: 6.4, length: 5.4, x: 8.2, z: 4.6, color: "#182846" }, // Lounge
   ],
 };
 
@@ -123,7 +117,7 @@ export const AGENT_STATIONS = {
     name: "Backend Dev",
     role: "API & Business Logic",
     color: "#3B82F6",
-    position: { x: -8.2, y: 0, z: 4.5 },
+    position: { x: -8.2, y: 0, z: 3.8 },
     rotation: { y: Math.PI },
   },
   frontend: {
@@ -131,7 +125,7 @@ export const AGENT_STATIONS = {
     name: "Frontend Dev",
     role: "UI/UX & WebGL",
     color: "#10B981",
-    position: { x: -8.2, y: 0, z: 1.5 },
+    position: { x: -8.2, y: 0, z: 0.2 },
     rotation: { y: Math.PI },
   },
   qa: {

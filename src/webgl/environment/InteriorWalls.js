@@ -28,54 +28,56 @@ export class InteriorWalls {
   buildWalls() {
     const { kitchenWall, loungeTVWall } = DIORAMA_CONFIG.interiorWalls;
 
-    // 1. Muro de la Cocina (corre a lo largo del eje Z, paralelo al pasillo)
+    // 1. Muro de la Cocina (Orientado sobre el eje Z, paralelo al pasillo central)
+    const kwLength = Math.abs(kitchenWall.endZ - kitchenWall.startZ);
+    const kwCenterZ = (kitchenWall.startZ + kitchenWall.endZ) / 2;
+
     const kw = new THREE.Mesh(
       new THREE.BoxGeometry(
-        kitchenWall.width,
+        kitchenWall.thickness,
         kitchenWall.height,
-        kitchenWall.depth,
+        kwLength,
       ),
       this.wallMat,
     );
-    kw.position.set(kitchenWall.x, kitchenWall.height / 2, kitchenWall.z);
+    kw.position.set(kitchenWall.x, kitchenWall.height / 2, kwCenterZ);
     kw.castShadow = true;
     kw.receiveShadow = true;
     this.group.add(kw);
 
     const kb = new THREE.Mesh(
       new THREE.BoxGeometry(
-        kitchenWall.width + 0.04,
+        kitchenWall.thickness + 0.04,
         0.16,
-        kitchenWall.depth + 0.02,
+        kwLength + 0.02,
       ),
       this.baseboardMat,
     );
-    kb.position.set(kitchenWall.x, 0.08, kitchenWall.z);
+    kb.position.set(kitchenWall.x, 0.08, kwCenterZ);
     this.group.add(kb);
 
-    // 2. Muro de la TV en el Lounge (corre a lo largo del eje X, frente al salón)
+    // 2. Muro de la TV (Orientado sobre el eje X, empotrado en la pared este)
+    const lwWidth = Math.abs(loungeTVWall.endX - loungeTVWall.startX);
+    const lwCenterX = (loungeTVWall.startX + loungeTVWall.endX) / 2;
+
     const lw = new THREE.Mesh(
       new THREE.BoxGeometry(
-        loungeTVWall.width,
+        lwWidth,
         loungeTVWall.height,
-        loungeTVWall.depth,
+        loungeTVWall.thickness,
       ),
       this.wallMat,
     );
-    lw.position.set(loungeTVWall.x, loungeTVWall.height / 2, loungeTVWall.z);
+    lw.position.set(lwCenterX, loungeTVWall.height / 2, loungeTVWall.z);
     lw.castShadow = true;
     lw.receiveShadow = true;
     this.group.add(lw);
 
     const lb = new THREE.Mesh(
-      new THREE.BoxGeometry(
-        loungeTVWall.width + 0.02,
-        0.16,
-        loungeTVWall.depth + 0.04,
-      ),
+      new THREE.BoxGeometry(lwWidth, 0.16, loungeTVWall.thickness + 0.04),
       this.baseboardMat,
     );
-    lb.position.set(loungeTVWall.x, 0.08, loungeTVWall.z);
+    lb.position.set(lwCenterX, 0.08, loungeTVWall.z);
     this.group.add(lb);
   }
 }

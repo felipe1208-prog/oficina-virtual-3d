@@ -1,16 +1,13 @@
 import * as THREE from "three";
 import { DIORAMA_CONFIG } from "../../config/officeLayout.js";
-import { fitModel } from "../utils/modelUtils.js";
 
 export class CarpetSystem {
-  constructor(scene, resources) {
+  constructor(scene) {
     this.scene = scene;
-    this.resources = resources;
     this.group = new THREE.Group();
     this.group.name = "carpet-system";
 
     this.initTextileCarpets();
-    this.initWoolCarpet();
     this.scene.add(this.group);
   }
 
@@ -52,27 +49,5 @@ export class CarpetSystem {
       mesh.receiveShadow = true;
       this.group.add(mesh);
     });
-  }
-
-  initWoolCarpet() {
-    const rawWoolCarpet = this.resources.get("woolCarpetRed");
-    if (!rawWoolCarpet) return;
-
-    const carpet = rawWoolCarpet.clone(true);
-    carpet.traverse((child) => {
-      if (child.isMesh) {
-        child.receiveShadow = true;
-        if (child.material) {
-          child.material = child.material.clone();
-          child.material.color.set("#A8382C");
-          child.material.roughness = 0.95;
-        }
-      }
-    });
-
-    const fitted = fitModel(carpet, { width: 3.6 });
-    // Posición en la esquina superior derecha (junto a ping-pong)
-    fitted.position.set(9.6, 0.012, -4.8);
-    this.group.add(fitted);
   }
 }
