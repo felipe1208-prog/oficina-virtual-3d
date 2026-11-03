@@ -1,115 +1,111 @@
 export const DIORAMA_CONFIG = {
-  wallHeight: 3.5,
-  wallThickness: 0.28,
+  wallHeight: 3.8,
+  wallThickness: 0.35,
   baseboardHeight: 0.16,
 
-  // Polígono exacto del suelo (Silueta escalonada igual al plano y render)
-  // Recorrido en sentido horario desde la esquina inferior izquierda (Frente-Oeste)
+  // Polígono escalonado exacto de la planta
   floorPolygon: [
-    { x: -12.0, z: 9.0 }, // 1. Esquina Frontal Izquierda (Dev Area)
-    { x: -12.0, z: -8.0 }, // 2. Sube por Pared Oeste hasta Supervisor
-    { x: -5.0, z: -8.0 }, // 3. Muro Norte de Supervisor
-    { x: -5.0, z: -5.5 }, // 4. Quiebre/Entrante entre Supervisor y Reuniones
-    { x: -5.0, z: -9.5 }, // 5. Sube al Muro Norte de Sala de Reuniones
-    { x: 3.5, z: -9.5 }, // 6. Esquina Norte de Sala de Reuniones
-    { x: 3.5, z: -6.5 }, // 7. Quiebre/Entrante hacia zona de Ping Pong
-    { x: 12.5, z: -6.5 }, // 8. Muro Norte de Ping Pong y Lounge Derecho
-    { x: 12.5, z: 3.5 }, // 9. Pared Este (Derecha) detrás del Lounge
-    { x: 6.5, z: 3.5 }, // 10. Escalón Frontal Derecho
-    { x: 6.5, z: 9.0 }, // 11. Esquina Frontal Derecha (Lounge Principal)
-    { x: -12.0, z: 9.0 }, // Cierre en Esquina Frontal Izquierda
+    { x: -12.0, z: 9.0 }, // Esquina Frontal Izquierda
+    { x: -12.0, z: -8.5 }, // Muro Oeste continuo
+    { x: -4.5, z: -8.5 }, // Muro Norte Supervisor
+    { x: -4.5, z: -9.2 }, // Retranqueo sutil hacia Sala de Reuniones
+    { x: 4.2, z: -9.2 }, // Muro Norte Sala de Reuniones
+    { x: 4.2, z: -8.5 }, // Quiebre hacia zona de Ping-Pong
+    { x: 12.0, z: -8.5 }, // Muro Norte Ping-Pong y Lounge Derecho
+    { x: 12.0, z: 3.5 }, // Cierre Muro Este
+    { x: 7.0, z: 3.5 }, // Escalón frontal Lounge
+    { x: 7.0, z: 9.0 }, // Esquina Frontal Derecha
+    { x: -12.0, z: 9.0 }, // Cierre
   ],
 
-  // Tramos de muros perimetrales escalonados con ventanales integrados
+  // Muros perimetrales con ventanales panorámicos
   perimeterWalls: [
-    // Pared Oeste (Dev Area y Supervisor)
     {
       p1: { x: -12.0, z: 9.0 },
-      p2: { x: -12.0, z: -8.0 },
+      p2: { x: -12.0, z: -8.5 },
       windows: [
-        { offset: 3.2, width: 2.4, height: 1.9 },
-        { offset: 7.5, width: 2.4, height: 1.9 },
-        { offset: 13.0, width: 3.4, height: 2.0 },
+        { offset: 3.2, width: 2.8, height: 2.1 },
+        { offset: 8.0, width: 2.8, height: 2.1 },
+        { offset: 13.5, width: 3.4, height: 2.1 },
       ],
     },
-    // Pared Norte Supervisor
     {
-      p1: { x: -12.0, z: -8.0 },
-      p2: { x: -5.0, z: -8.0 },
-      windows: [{ offset: 3.5, width: 3.2, height: 2.0 }],
+      p1: { x: -12.0, z: -8.5 },
+      p2: { x: -4.5, z: -8.5 },
+      windows: [{ offset: 3.8, width: 3.4, height: 2.1 }],
     },
-    // Muro de quiebre Supervisor -> Reuniones
-    { p1: { x: -5.0, z: -8.0 }, p2: { x: -5.0, z: -9.5 }, windows: [] },
-    // Pared Norte Sala de Reuniones
+    { p1: { x: -4.5, z: -8.5 }, p2: { x: -4.5, z: -9.2 }, windows: [] },
     {
-      p1: { x: -5.0, z: -9.5 },
-      p2: { x: 3.5, z: -9.5 },
-      windows: [{ offset: 2.2, width: 3.4, height: 2.0 }],
+      p1: { x: -4.5, z: -9.2 },
+      p2: { x: 4.2, z: -9.2 },
+      windows: [{ offset: 4.35, width: 3.6, height: 2.1 }],
     },
-    // Muro de quiebre Reuniones -> Ping Pong
-    { p1: { x: 3.5, z: -9.5 }, p2: { x: 3.5, z: -6.5 }, windows: [] },
-    // Pared Norte Ping Pong y Lounge Derecho
+    { p1: { x: 4.2, z: -9.2 }, p2: { x: 4.2, z: -8.5 }, windows: [] },
     {
-      p1: { x: 3.5, z: -6.5 },
-      p2: { x: 12.5, z: -6.5 },
-      windows: [{ offset: 6.8, width: 3.4, height: 2.0 }],
+      p1: { x: 4.2, z: -8.5 },
+      p2: { x: 12.0, z: -8.5 },
+      windows: [{ offset: 5.5, width: 3.4, height: 2.1 }],
     },
-    // Pared Este corta (Cierre derecho)
-    { p1: { x: 12.5, z: -6.5 }, p2: { x: 12.5, z: 3.5 }, windows: [] },
+    {
+      p1: { x: 12.0, z: -8.5 },
+      p2: { x: 12.0, z: 3.5 },
+      windows: [{ offset: 6.0, width: 2.8, height: 2.1 }],
+    },
   ],
 
-  // Cerramientos de Cristal encajados en los entrantes de los muros
+  // Cerramientos de Cristal con fachada frontal continua en Z = -2.8
   glassRooms: {
     supervisor: {
       minX: -12.0,
-      maxX: -5.0,
-      minZ: -8.0,
+      maxX: -4.8,
+      minZ: -8.5,
       maxZ: -2.8,
-      doorGap: { start: -7.5, end: -6.0 },
+      doorGap: { start: -7.5, end: -5.9 },
     },
     meeting: {
-      minX: -5.0,
-      maxX: 3.5,
-      minZ: -9.5,
-      maxZ: -3.2,
-      doorGap: { start: -1.5, end: 0.2 },
+      minX: -4.2,
+      maxX: 4.2,
+      minZ: -9.2,
+      maxZ: -2.8,
+      doorGap: { start: -0.8, end: 0.8 },
     },
   },
 
-  // Muros interiores independientes (Cocina y TV Lounge)
+  // Muros Interiores con orientación corregida
   interiorWalls: {
+    // Corre a lo largo del eje Z (paralelo al muro izquierdo)
     kitchenWall: {
-      x: -1.8,
-      z: 4.5,
-      width: 0.24,
-      length: 4.8,
+      x: -2.2,
+      z: 5.2,
+      width: 0.28,
       height: 2.1,
-      rotY: Math.PI / 4,
-    }, // Alineado con la isla
-    kitchenSimple: { x: -2.2, z: 4.2, width: 4.6, length: 0.24, height: 2.0 },
-    loungeTVWall: { x: 5.2, z: 2.8, width: 0.26, length: 4.6, height: 2.6 },
+      depth: 4.6,
+    },
+    // Corre a lo largo del eje X (paralelo al muro del fondo)
+    loungeTVWall: {
+      x: 7.2,
+      z: 0.8,
+      width: 5.4,
+      height: 2.6,
+      depth: 0.3,
+    },
   },
 
-  // Caminos de Alfombra (Gris Carbón para Dev/Pasillos y Azul Marino para Reuniones/Lounge)
+  // Red de alfombras limpias continuas
   carpets: [
-    // Pasillos Gris Carbón cálido (#363B42)
-    { width: 2.2, length: 10.5, x: -4.2, z: 2.8, color: "#363B42" },
-    { width: 9.5, length: 2.0, x: -1.5, z: -1.6, color: "#363B42" },
-    { width: 7.5, length: 1.8, x: -8.0, z: 1.8, color: "#363B42" },
-    { width: 3.2, length: 3.0, x: -1.8, z: 1.8, color: "#363B42" },
+    // Corredor peatonal gris grafito en L
+    { width: 2.4, length: 11.2, x: -3.4, z: 3.2, color: "#2B323D" },
+    { width: 11.5, length: 2.2, x: -1.5, z: -1.5, color: "#2B323D" },
 
-    // Alfombra Azul Marino en Sala de Reuniones (#233656)
-    { width: 6.4, length: 4.4, x: -0.8, z: -6.2, color: "#233656" },
+    // Alfombra azul marino de la Sala de Reuniones
+    { width: 6.8, length: 4.8, x: 0.0, z: -6.0, color: "#1B2C4E" },
 
-    // Alfombra Azul Marino en T hacia el Lounge (#1E3252)
-    { width: 2.2, length: 7.5, x: 1.8, z: 4.2, color: "#1E3252" },
-    { width: 7.2, length: 2.2, x: 3.2, z: 1.2, color: "#1E3252" },
+    // Alfombras bajo las islas de computación
+    { width: 3.8, length: 5.2, x: -8.2, z: 3.5, color: "#222832" },
+    { width: 3.4, length: 3.6, x: -8.2, z: -0.8, color: "#222832" },
 
-    // Alfombra Gris Topo bajo los sofás del Lounge (#4A4E54)
-    { width: 4.6, length: 4.2, x: 3.5, z: 5.5, color: "#4A4E54" },
-
-    // Alfombra Terracota en el segundo Lounge derecho (#9E4738)
-    { width: 3.8, length: 3.4, x: 9.5, z: 0.5, color: "#9E4738" },
+    // Alfombra azul marino del salón principal (Lounge)
+    { width: 7.4, length: 5.8, x: 7.0, z: 4.6, color: "#182846" },
   ],
 };
 
@@ -119,7 +115,7 @@ export const AGENT_STATIONS = {
     name: "Tech Lead / Supervisor",
     role: "Architecture & Supervision",
     color: "#8B5CF6",
-    position: { x: -8.5, y: 0, z: -5.4 },
+    position: { x: -8.5, y: 0, z: -5.8 },
     rotation: { y: Math.PI },
   },
   backend: {
@@ -127,7 +123,7 @@ export const AGENT_STATIONS = {
     name: "Backend Dev",
     role: "API & Business Logic",
     color: "#3B82F6",
-    position: { x: -8.2, y: 0, z: 4.2 },
+    position: { x: -8.2, y: 0, z: 4.5 },
     rotation: { y: Math.PI },
   },
   frontend: {
@@ -135,7 +131,7 @@ export const AGENT_STATIONS = {
     name: "Frontend Dev",
     role: "UI/UX & WebGL",
     color: "#10B981",
-    position: { x: -8.2, y: 0, z: 0.2 },
+    position: { x: -8.2, y: 0, z: 1.5 },
     rotation: { y: Math.PI },
   },
   qa: {
@@ -143,7 +139,7 @@ export const AGENT_STATIONS = {
     name: "DevOps / QA",
     role: "Database & Reliability",
     color: "#F59E0B",
-    position: { x: -3.2, y: 0, z: 0.8 },
+    position: { x: -3.3, y: 0, z: 0.8 },
     rotation: { y: 0 },
   },
 };

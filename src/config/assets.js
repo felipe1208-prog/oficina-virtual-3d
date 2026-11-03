@@ -1,12 +1,10 @@
 export const ASSETS_MANIFEST = [
-  // Personaje base
+  // Personajes y Animaciones
   {
     name: "character",
     type: "gltf",
     path: "/models/characters/character-hyper-casual.glb",
   },
-
-  // Animaciones FBX
   { name: "animTyping", type: "fbx", path: "/models/animations/Typing.fbx" },
   {
     name: "animSittingIdle",
@@ -40,7 +38,7 @@ export const ASSETS_MANIFEST = [
   },
   { name: "animWalking", type: "fbx", path: "/models/animations/Walking.fbx" },
 
-  // Estaciones de trabajo
+  // Estaciones de Trabajo (Dev Pods y Supervisor)
   {
     name: "desk",
     type: "gltf",
@@ -56,7 +54,101 @@ export const ASSETS_MANIFEST = [
   { name: "mouse", type: "gltf", path: "/models/workstations/mouse.glb" },
   { name: "mousepad", type: "gltf", path: "/models/workstations/mousepad.glb" },
 
-  // Zona Lounge
+  // Arquitectura y Estructura (Paso 2)
+  {
+    name: "doorwayOpen",
+    type: "gltf",
+    path: "/models/environment/doorway-open.glb",
+  },
+  {
+    name: "doorwayClosed",
+    type: "gltf",
+    path: "/models/environment/doorway-closed.glb",
+  },
+  {
+    name: "whiteboard",
+    type: "gltf",
+    path: "/models/environment/whiteboard.glb",
+  },
+  {
+    name: "woolCarpetRed",
+    type: "gltf",
+    path: "/models/environment/wool-carpet-red.glb",
+  },
+  { name: "window", type: "gltf", path: "/models/environment/window.glb" },
+  {
+    name: "ceilingLight",
+    type: "gltf",
+    path: "/models/environment/ceiling-light.glb",
+  },
+  {
+    name: "ceilingFan",
+    type: "gltf",
+    path: "/models/environment/ceiling-fan.glb",
+  },
+  {
+    name: "lightSwitch",
+    type: "gltf",
+    path: "/models/environment/light-switch.glb",
+  },
+  { name: "trashcan", type: "gltf", path: "/models/environment/trashcan.glb" },
+
+  // Vegetación de Interior
+  {
+    name: "houseplant",
+    type: "gltf",
+    path: "/models/environment/houseplant.glb",
+  },
+  {
+    name: "plantFlowerPot",
+    type: "gltf",
+    path: "/models/environment/plant-flower-pot.glb",
+  },
+  {
+    name: "plantFiddleLeaf",
+    type: "gltf",
+    path: "/models/environment/plant-fiddle-leaf.glb",
+  },
+
+  // Cocina y Cafetería
+  {
+    name: "coffeeMachine",
+    type: "gltf",
+    path: "/models/kitchen-stress/coffee-machine.glb",
+  },
+  {
+    name: "coffeeMug",
+    type: "gltf",
+    path: "/models/kitchen-stress/coffee-mug.glb",
+  },
+  {
+    name: "waterCooler",
+    type: "gltf",
+    path: "/models/kitchen-stress/water-cooler.glb",
+  },
+  {
+    name: "waterGlass",
+    type: "gltf",
+    path: "/models/kitchen-stress/water-glass.glb",
+  },
+  {
+    name: "sodaCan",
+    type: "gltf",
+    path: "/models/kitchen-stress/soda-can.glb",
+  },
+  {
+    name: "sodaCanCrushed",
+    type: "gltf",
+    path: "/models/kitchen-stress/soda-can-crushed.glb",
+  },
+  { name: "fridge", type: "gltf", path: "/models/kitchen-stress/fridge.glb" },
+  {
+    name: "vendingMachine",
+    type: "gltf",
+    path: "/models/kitchen-stress/vending-machine.glb",
+  },
+
+  // Lounge y Recreación
   {
     name: "couchMedium",
     type: "gltf",
@@ -69,11 +161,21 @@ export const ASSETS_MANIFEST = [
     path: "/models/lounge/table-coffee.glb",
   },
   {
+    name: "tableSideRound",
+    type: "gltf",
+    path: "/models/lounge/table-side-round.glb",
+  },
+  {
     name: "tvFlatScreen",
     type: "gltf",
     path: "/models/lounge/tv-flat-screen.glb",
   },
   { name: "tvRemote", type: "gltf", path: "/models/lounge/tv-remote.glb" },
+  {
+    name: "cubeCabinet",
+    type: "gltf",
+    path: "/models/lounge/cube-cabinet.glb",
+  },
   {
     name: "pingPongTable",
     type: "gltf",
@@ -89,55 +191,4 @@ export const ASSETS_MANIFEST = [
     type: "gltf",
     path: "/models/lounge/ping-pong-ball.glb",
   },
-
-  // Cocina y Break
-  {
-    name: "waterCooler",
-    type: "gltf",
-    path: "/models/kitchen-stress/water-cooler.glb",
-  },
-  {
-    name: "coffeeMachine",
-    type: "gltf",
-    path: "/models/kitchen-stress/coffee-machine.glb",
-  },
-  {
-    name: "coffeeMug",
-    type: "gltf",
-    path: "/models/kitchen-stress/coffee-mug.glb",
-  },
-  {
-    name: "sodaCan",
-    type: "gltf",
-    path: "/models/kitchen-stress/soda-can.glb",
-  },
-  {
-    name: "sodaCanCrushed",
-    type: "gltf",
-    path: "/models/kitchen-stress/soda-can-crushed.glb",
-  },
-
-  // Entorno y Climatización
-  { name: "window", type: "gltf", path: "/models/environment/window.glb" },
-  {
-    name: "ceilingFan",
-    type: "gltf",
-    path: "/models/environment/ceiling-fan.glb",
-  },
-  {
-    name: "ceilingLight",
-    type: "gltf",
-    path: "/models/environment/ceiling-light.glb",
-  },
-  {
-    name: "houseplant",
-    type: "gltf",
-    path: "/models/environment/houseplant.glb",
-  },
-  {
-    name: "lightSwitch",
-    type: "gltf",
-    path: "/models/environment/light-switch.glb",
-  },
-  { name: "trashcan", type: "gltf", path: "/models/environment/trashcan.glb" },
 ];

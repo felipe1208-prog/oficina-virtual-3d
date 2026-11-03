@@ -5,42 +5,40 @@ export class DioramaShell {
   constructor(scene) {
     this.scene = scene;
     this.group = new THREE.Group();
+    this.group.name = "diorama-perimeter-shell";
+
     this.initMaterials();
-    this.buildSteppedWalls();
+    this.buildWalls();
     this.scene.add(this.group);
   }
 
   initMaterials() {
-    // Muro crema/marfil cálido idéntico al render
     this.wallMat = new THREE.MeshStandardMaterial({
-      color: "#F5EDE2",
-      roughness: 0.85,
+      color: "#F5ECE2", // Crema marfil cálido de estudio
+      roughness: 0.88,
       metalness: 0.02,
     });
 
-    // Coronación superior del muro cortado
     this.capMat = new THREE.MeshStandardMaterial({
-      color: "#FDFBF7",
-      roughness: 0.6,
+      color: "#FCF9F5",
+      roughness: 0.55,
     });
 
-    // Zócalo y marcos de ventana en madera nogal cálida
     this.woodFrameMat = new THREE.MeshStandardMaterial({
-      color: "#5C381E",
+      color: "#523018", // Madera nogal cálida para marcos y zócalos
       roughness: 0.55,
       metalness: 0.05,
     });
 
-    // Cristal luminoso de ventanal exterior
     this.windowGlassMat = new THREE.MeshStandardMaterial({
-      color: "#FFFDF9",
-      emissive: new THREE.Color("#FFF8EB"),
+      color: "#FFFFFF",
+      emissive: new THREE.Color("#FFF5E6"),
       emissiveIntensity: 0.45,
-      roughness: 0.1,
+      roughness: 0.08,
     });
   }
 
-  buildSteppedWalls() {
+  buildWalls() {
     const { wallHeight, wallThickness, baseboardHeight, perimeterWalls } =
       DIORAMA_CONFIG;
 
@@ -55,7 +53,7 @@ export class DioramaShell {
       wallGroup.position.set(center.x, 0, center.z);
       wallGroup.rotation.y = -angle;
 
-      // Cuerpo del muro
+      // Muro sólido estructural
       const wallMesh = new THREE.Mesh(
         new THREE.BoxGeometry(
           length + wallThickness,
@@ -69,41 +67,41 @@ export class DioramaShell {
       wallMesh.receiveShadow = true;
       wallGroup.add(wallMesh);
 
-      // Tapa superior limpia del corte arquitectónico
-      const capMesh = new THREE.Mesh(
+      // Remate superior limpio
+      const cap = new THREE.Mesh(
         new THREE.BoxGeometry(
           length + wallThickness + 0.02,
-          0.04,
+          0.05,
           wallThickness + 0.02,
         ),
         this.capMat,
       );
-      capMesh.position.y = wallHeight + 0.02;
-      wallGroup.add(capMesh);
+      cap.position.y = wallHeight + 0.025;
+      wallGroup.add(cap);
 
-      // Zócalo inferior de madera cálida
-      const baseMesh = new THREE.Mesh(
+      // Zócalo inferior
+      const base = new THREE.Mesh(
         new THREE.BoxGeometry(
           length + wallThickness,
           baseboardHeight,
-          wallThickness + 0.05,
+          wallThickness + 0.06,
         ),
         this.woodFrameMat,
       );
-      baseMesh.position.y = baseboardHeight / 2;
-      wallGroup.add(baseMesh);
+      base.position.y = baseboardHeight / 2;
+      wallGroup.add(base);
 
-      // Ventanales panorámicos empotrados perfectamente al ras del muro
+      // Ventanales panorámicos de gran tamaño
       if (seg.windows && seg.windows.length > 0) {
         seg.windows.forEach((win) => {
           const localX = -length / 2 + win.offset;
-          const winNode = this.createArchitecturalWindow(
+          const windowNode = this.createPanoramicWindow(
             win.width,
             win.height,
             wallThickness,
           );
-          winNode.position.set(localX, 1.85, 0);
-          wallGroup.add(winNode);
+          windowNode.position.set(localX, 1.95, 0);
+          wallGroup.add(windowNode);
         });
       }
 
@@ -111,26 +109,27 @@ export class DioramaShell {
     });
   }
 
-  createArchitecturalWindow(w, h, wallThickness) {
+  createPanoramicWindow(w, h, wallThickness) {
     const winGroup = new THREE.Group();
-    const depth = wallThickness + 0.06;
+    const depth = wallThickness + 0.08;
 
-    // Panel de luz solar (cristal)
+    // Superficie luminosa
     const glass = new THREE.Mesh(
       new THREE.BoxGeometry(w - 0.12, h - 0.12, depth - 0.02),
       this.windowGlassMat,
     );
     winGroup.add(glass);
 
-    // Marco perimetral de madera cálida
-    const frameT = 0.07;
+    // Marco exterior de madera
+    const frameT = 0.08;
     const top = new THREE.Mesh(
       new THREE.BoxGeometry(w, frameT, depth),
       this.woodFrameMat,
     );
     top.position.y = h / 2 - frameT / 2;
+
     const bottom = new THREE.Mesh(
-      new THREE.BoxGeometry(w + 0.08, frameT + 0.02, depth + 0.04),
+      new THREE.BoxGeometry(w + 0.1, frameT + 0.04, depth + 0.06),
       this.woodFrameMat,
     );
     bottom.position.y = -h / 2 + frameT / 2;
@@ -140,6 +139,7 @@ export class DioramaShell {
       this.woodFrameMat,
     );
     left.position.x = -w / 2 + frameT / 2;
+
     const right = new THREE.Mesh(
       new THREE.BoxGeometry(frameT, h, depth),
       this.woodFrameMat,
@@ -148,19 +148,18 @@ export class DioramaShell {
 
     winGroup.add(top, bottom, left, right);
 
-    // Travesaños internos estilo ventanal moderno (2 horizontales, 2 verticales)
+    // Cuadrícula interior (3 columnas x 2 filas)
     const mullionH = new THREE.Mesh(
-      new THREE.BoxGeometry(w - 0.1, 0.04, depth),
+      new THREE.BoxGeometry(w - 0.1, 0.05, depth),
       this.woodFrameMat,
     );
-    mullionH.position.y = 0.25;
+    mullionH.position.y = 0.15;
     winGroup.add(mullionH);
 
-    const cols = w > 2.8 ? 3 : 2;
-    for (let i = 1; i < cols; i++) {
-      const mx = -w / 2 + (w / cols) * i;
+    for (let i = 1; i <= 2; i++) {
+      const mx = -w / 2 + (w / 3) * i;
       const mullionV = new THREE.Mesh(
-        new THREE.BoxGeometry(0.04, h - 0.1, depth),
+        new THREE.BoxGeometry(0.05, h - 0.1, depth),
         this.woodFrameMat,
       );
       mullionV.position.x = mx;

@@ -1,50 +1,54 @@
 import * as THREE from "three";
 import { DIORAMA_CONFIG } from "../../config/officeLayout.js";
+import { fitModel } from "../utils/modelUtils.js";
 
 export class GlassPartitions {
-  constructor(scene) {
+  constructor(scene, resources) {
     this.scene = scene;
+    this.resources = resources;
     this.group = new THREE.Group();
+    this.group.name = "acoustic-glass-system";
 
     this.initMaterials();
-    this.buildSupervisorEnclosure();
-    this.buildMeetingEnclosure();
-    this.buildInteriorWalls();
-    this.buildPlanters();
+    this.buildSupervisorRoom();
+    this.buildMeetingRoom();
+    this.buildPlanterBoxes();
 
     this.scene.add(this.group);
   }
 
   initMaterials() {
+    // Acero negro industrial carbón mate (#12141A)
     this.frameMat = new THREE.MeshStandardMaterial({
-      color: "#181A20",
-      roughness: 0.3,
-      metalness: 0.85,
+      color: "#12141A",
+      roughness: 0.35,
+      metalness: 0.82,
     });
 
+    // Cristal físico de alta pureza y transmisión lumínica
     this.glassMat = new THREE.MeshPhysicalMaterial({
-      color: "#EDF6FC",
+      color: "#E8F3FA",
       transparent: true,
-      opacity: 0.24,
-      transmission: 0.86,
-      roughness: 0.05,
-      metalness: 0.08,
+      opacity: 0.22,
+      transmission: 0.88,
+      roughness: 0.04,
+      metalness: 0.05,
       ior: 1.5,
       side: THREE.DoubleSide,
     });
 
-    this.wallMat = new THREE.MeshStandardMaterial({
-      color: "#F5EDE2",
-      roughness: 0.85,
+    this.planterMat = new THREE.MeshStandardMaterial({
+      color: "#FFFFFF",
+      roughness: 0.4,
     });
 
-    this.baseboardMat = new THREE.MeshStandardMaterial({
-      color: "#5C381E",
-      roughness: 0.6,
+    this.foliageMat = new THREE.MeshStandardMaterial({
+      color: "#28622A",
+      roughness: 0.75,
     });
   }
 
-  createGlassWall(p1, p2, height = 3.1, mullions = 3) {
+  createGlassSpan(p1, p2, height = 3.2, cols = 2) {
     const len = p1.distanceTo(p2);
     const center = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
     const angle = Math.atan2(p2.z - p1.z, p2.x - p1.x);
@@ -53,7 +57,7 @@ export class GlassPartitions {
     panel.position.set(center.x, 0, center.z);
     panel.rotation.y = -angle;
 
-    // Cristal
+    // Paño de vidrio templado
     const glass = new THREE.Mesh(
       new THREE.PlaneGeometry(len, height),
       this.glassMat,
@@ -61,196 +65,156 @@ export class GlassPartitions {
     glass.position.y = height / 2;
     panel.add(glass);
 
-    // Riel inferior y viga superior negra
+    // Perfiles estructurales gruesos de 12cm
+    const frameW = 0.11;
     const bottom = new THREE.Mesh(
-      new THREE.BoxGeometry(len, 0.06, 0.06),
+      new THREE.BoxGeometry(len, frameW, frameW),
       this.frameMat,
     );
-    bottom.position.y = 0.03;
+    bottom.position.y = frameW / 2;
+
     const top = new THREE.Mesh(
-      new THREE.BoxGeometry(len, 0.07, 0.07),
+      new THREE.BoxGeometry(len, frameW, frameW),
       this.frameMat,
     );
-    top.position.y = height - 0.035;
+    top.position.y = height - frameW / 2;
     panel.add(bottom, top);
 
-    // Columnas divisorias verticales de aluminio negro
-    for (let i = 0; i <= mullions; i++) {
-      const px = -len / 2 + (len / mullions) * i;
+    // Montantes verticales
+    for (let i = 0; i <= cols; i++) {
+      const px = -len / 2 + (len / cols) * i;
       const post = new THREE.Mesh(
-        new THREE.BoxGeometry(0.06, height, 0.06),
+        new THREE.BoxGeometry(frameW, height, frameW),
         this.frameMat,
       );
       post.position.set(px, height / 2, 0);
       panel.add(post);
     }
 
-    this.group.add(panel);
+    return panel;
   }
 
-  buildSupervisorEnclosure() {
+  createFramedPortal(doorX, z, doorWidth = 1.45, height = 3.2) {
+    const portalGroup = new THREE.Group();
+    const frameW = 0.11;
+    const doorHeight = 2.35;
+
+    // Jambas izquierda y derecha
+    const jambL = new THREE.Mesh(
+      new THREE.BoxGeometry(frameW, height, frameW),
+      this.frameMat,
+    );
+    jambL.position.set(doorX - doorWidth / 2, height / 2, z);
+
+    const jambR = new THREE.Mesh(
+      new THREE.BoxGeometry(frameW, height, frameW),
+      this.frameMat,
+    );
+    jambR.position.set(doorX + doorWidth / 2, height / 2, z);
+
+    // Dintel intermedio de la puerta
+    const lintel = new THREE.Mesh(
+      new THREE.BoxGeometry(doorWidth, frameW, frameW),
+      this.frameMat,
+    );
+    lintel.position.set(doorX, doorHeight, z);
+
+    // Viga superior del techo
+    const header = new THREE.Mesh(
+      new THREE.BoxGeometry(doorWidth, frameW, frameW),
+      this.frameMat,
+    );
+    header.position.set(doorX, height - frameW / 2, z);
+
+    // Cristal fijo superior sobre la puerta
+    const glassTop = new THREE.Mesh(
+      new THREE.PlaneGeometry(doorWidth, height - doorHeight - frameW),
+      this.glassMat,
+    );
+    glassTop.position.set(doorX, doorHeight + (height - doorHeight) / 2, z);
+
+    portalGroup.add(jambL, jambR, lintel, header, glassTop);
+    return portalGroup;
+  }
+
+  buildSupervisorRoom() {
     const s = DIORAMA_CONFIG.glassRooms.supervisor;
-    const H = 3.1;
-
-    // Fachada Sur con puerta abierta
-    this.createGlassWall(
-      new THREE.Vector3(s.minX, 0, s.maxZ),
-      new THREE.Vector3(s.doorGap.start, 0, s.maxZ),
-      H,
-      2,
-    );
-    this.createGlassWall(
-      new THREE.Vector3(s.doorGap.end, 0, s.maxZ),
-      new THREE.Vector3(s.maxX, 0, s.maxZ),
-      H,
-      1,
-    );
-
-    // Viga continua superior sobre la puerta
+    const H = 3.2;
+    const doorX = (s.doorGap.start + s.doorGap.end) / 2;
     const doorW = s.doorGap.end - s.doorGap.start;
-    const header = new THREE.Mesh(
-      new THREE.BoxGeometry(doorW, 0.07, 0.07),
-      this.frameMat,
-    );
-    header.position.set(
-      (s.doorGap.start + s.doorGap.end) / 2,
-      H - 0.035,
-      s.maxZ,
-    );
-    this.group.add(header);
 
-    // Cerramiento Este (Conecta con el muro escalonado)
-    this.createGlassWall(
-      new THREE.Vector3(s.maxX, 0, s.minZ),
-      new THREE.Vector3(s.maxX, 0, s.maxZ),
-      H,
-      2,
-    );
+    // Fachada Frontal (Sur) continua
+    this.group.add(this.createFramedPortal(doorX, s.maxZ, doorW, H));
+
+    const pLeft1 = new THREE.Vector3(s.minX, 0, s.maxZ);
+    const pLeft2 = new THREE.Vector3(s.doorGap.start, 0, s.maxZ);
+    this.group.add(this.createGlassSpan(pLeft1, pLeft2, H, 2));
+
+    const pRight1 = new THREE.Vector3(s.doorGap.end, 0, s.maxZ);
+    const pRight2 = new THREE.Vector3(s.maxX, 0, s.maxZ);
+    this.group.add(this.createGlassSpan(pRight1, pRight2, H, 1));
+
+    // Cerramiento lateral Este
+    const pEast1 = new THREE.Vector3(s.maxX, 0, s.minZ);
+    const pEast2 = new THREE.Vector3(s.maxX, 0, s.maxZ);
+    this.group.add(this.createGlassSpan(pEast1, pEast2, H, 2));
   }
 
-  buildMeetingEnclosure() {
+  buildMeetingRoom() {
     const m = DIORAMA_CONFIG.glassRooms.meeting;
-    const H = 3.1;
-
-    // Fachada Sur con puerta abierta
-    this.createGlassWall(
-      new THREE.Vector3(m.minX, 0, m.maxZ),
-      new THREE.Vector3(m.doorGap.start, 0, m.maxZ),
-      H,
-      2,
-    );
-    this.createGlassWall(
-      new THREE.Vector3(m.doorGap.end, 0, m.maxZ),
-      new THREE.Vector3(m.maxX, 0, m.maxZ),
-      H,
-      2,
-    );
-
+    const H = 3.2;
+    const doorX = (m.doorGap.start + m.doorGap.end) / 2;
     const doorW = m.doorGap.end - m.doorGap.start;
-    const header = new THREE.Mesh(
-      new THREE.BoxGeometry(doorW, 0.07, 0.07),
-      this.frameMat,
-    );
-    header.position.set(
-      (m.doorGap.start + m.doorGap.end) / 2,
-      H - 0.035,
-      m.maxZ,
-    );
-    this.group.add(header);
 
-    // Cerramiento Oeste y Este
-    this.createGlassWall(
-      new THREE.Vector3(m.minX, 0, -8.0),
-      new THREE.Vector3(m.minX, 0, m.maxZ),
-      H,
-      2,
-    );
-    this.createGlassWall(
-      new THREE.Vector3(m.maxX, 0, -6.5),
-      new THREE.Vector3(m.maxX, 0, m.maxZ),
-      H,
-      2,
-    );
+    // Fachada Frontal (Sur) alineada exactamente a Z = -2.8
+    this.group.add(this.createFramedPortal(doorX, m.maxZ, doorW, H));
+
+    const pLeft1 = new THREE.Vector3(m.minX, 0, m.maxZ);
+    const pLeft2 = new THREE.Vector3(m.doorGap.start, 0, m.maxZ);
+    this.group.add(this.createGlassSpan(pLeft1, pLeft2, H, 2));
+
+    const pRight1 = new THREE.Vector3(m.doorGap.end, 0, m.maxZ);
+    const pRight2 = new THREE.Vector3(m.maxX, 0, m.maxZ);
+    this.group.add(this.createGlassSpan(pRight1, pRight2, H, 2));
+
+    // Mamparas laterales Oeste y Este
+    const pWest1 = new THREE.Vector3(m.minX, 0, -8.5);
+    const pWest2 = new THREE.Vector3(m.minX, 0, m.maxZ);
+    this.group.add(this.createGlassSpan(pWest1, pWest2, H, 2));
+
+    const pEast1 = new THREE.Vector3(m.maxX, 0, -8.5);
+    const pEast2 = new THREE.Vector3(m.maxX, 0, m.maxZ);
+    this.group.add(this.createGlassSpan(pEast1, pEast2, H, 2));
+
+    // Pizarra de conferencias empotrada
+    const rawWhiteboard = this.resources.get("whiteboard");
+    if (rawWhiteboard) {
+      const wb = rawWhiteboard.clone(true);
+      const fitted = fitModel(wb, { height: 1.45 });
+      fitted.position.set(2.4, 1.95, -9.05);
+      this.group.add(fitted);
+    }
   }
 
-  buildInteriorWalls() {
-    const { kitchenSimple, loungeTVWall } = DIORAMA_CONFIG.interiorWalls;
-
-    // 1. Muro de media altura de la Cocina
-    const kw = new THREE.Mesh(
-      new THREE.BoxGeometry(
-        kitchenSimple.width,
-        kitchenSimple.height,
-        kitchenSimple.length,
-      ),
-      this.wallMat,
-    );
-    kw.position.set(kitchenSimple.x, kitchenSimple.height / 2, kitchenSimple.z);
-    kw.castShadow = true;
-    kw.receiveShadow = true;
-    this.group.add(kw);
-
-    const kb = new THREE.Mesh(
-      new THREE.BoxGeometry(
-        kitchenSimple.width + 0.02,
-        0.14,
-        kitchenSimple.length + 0.04,
-      ),
-      this.baseboardMat,
-    );
-    kb.position.set(kitchenSimple.x, 0.07, kitchenSimple.z);
-    this.group.add(kb);
-
-    // 2. Muro divisor de TV en el Lounge
-    const lw = new THREE.Mesh(
-      new THREE.BoxGeometry(
-        loungeTVWall.width,
-        loungeTVWall.height,
-        loungeTVWall.length,
-      ),
-      this.wallMat,
-    );
-    lw.position.set(loungeTVWall.x, loungeTVWall.height / 2, loungeTVWall.z);
-    lw.castShadow = true;
-    lw.receiveShadow = true;
-    this.group.add(lw);
-
-    const lb = new THREE.Mesh(
-      new THREE.BoxGeometry(
-        loungeTVWall.width + 0.04,
-        0.14,
-        loungeTVWall.length + 0.02,
-      ),
-      this.baseboardMat,
-    );
-    lb.position.set(loungeTVWall.x, 0.07, loungeTVWall.z);
-    this.group.add(lb);
-  }
-
-  buildPlanters() {
-    const planterMat = new THREE.MeshStandardMaterial({
-      color: "#FFFFFF",
-      roughness: 0.4,
-    });
-    const foliageMat = new THREE.MeshStandardMaterial({
-      color: "#407A3E",
-      roughness: 0.75,
-    });
-
+  buildPlanterBoxes() {
     const addPlanter = (x, z, w, d) => {
-      const box = new THREE.Mesh(new THREE.BoxGeometry(w, 0.28, d), planterMat);
-      box.position.set(x, 0.14, z);
-      box.castShadow = true;
-      const leaves = new THREE.Mesh(
-        new THREE.BoxGeometry(w - 0.12, 0.22, d - 0.12),
-        foliageMat,
+      const box = new THREE.Mesh(
+        new THREE.BoxGeometry(w, 0.32, d),
+        this.planterMat,
       );
-      leaves.position.set(x, 0.3, z);
+      box.position.set(x, 0.16, z);
+      box.castShadow = true;
+
+      const leaves = new THREE.Mesh(
+        new THREE.BoxGeometry(w - 0.1, 0.24, d - 0.1),
+        this.foliageMat,
+      );
+      leaves.position.set(x, 0.34, z);
       this.group.add(box, leaves);
     };
 
-    // Jardineras blancas exteriores junto a la sala de reuniones (igual que en el render)
-    addPlanter(3.85, -5.5, 0.4, 1.8);
-    addPlanter(3.85, -3.6, 0.4, 1.6);
+    // Jardineras decorativas a los pies de la fachada de reuniones
+    addPlanter(4.35, -5.5, 0.45, 2.0);
+    addPlanter(4.35, -3.4, 0.45, 1.6);
   }
 }

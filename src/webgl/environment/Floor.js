@@ -5,6 +5,7 @@ export class Floor {
   constructor(scene) {
     this.scene = scene;
     this.group = new THREE.Group();
+    this.group.name = "diorama-floor-system";
     this.init();
   }
 
@@ -14,39 +15,33 @@ export class Floor {
     canvas.height = 1024;
     const ctx = canvas.getContext("2d");
 
-    // Base roble miel dorado cálido
-    ctx.fillStyle = "#B87A44";
+    // Tono roble miel dorado cálido
+    ctx.fillStyle = "#C48248";
     ctx.fillRect(0, 0, 1024, 1024);
 
-    const plankH = 28;
+    const plankH = 32;
     const plankW = 256;
 
     for (let y = 0; y < 1024; y += plankH) {
       const offsetX = (y / plankH) % 2 === 0 ? 0 : plankW / 2;
       for (let x = -plankW; x < 1024 + plankW; x += plankW) {
-        // Fallback seguro para iteración
-      }
-    }
-
-    for (let y = 0; y < 1024; y += plankH) {
-      const offsetX = (y / plankH) % 2 === 0 ? 0 : plankW / 2;
-      for (let x = -plankW; x < 1024 + plankW; x += plankW) {
         const px = x + offsetX;
-        const v = Math.sin(x * 13.7 + y * 8.1) * 16;
-        const r = Math.min(255, Math.max(0, 188 + v));
-        const g = Math.min(255, Math.max(0, 124 + v * 0.75));
-        const b = Math.min(255, Math.max(0, 70 + v * 0.5));
+        const v = Math.sin(x * 12.5 + y * 7.8) * 14;
+        const r = Math.min(255, Math.max(0, 196 + v));
+        const g = Math.min(255, Math.max(0, 132 + v * 0.78));
+        const b = Math.min(255, Math.max(0, 76 + v * 0.55));
         ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
         ctx.fillRect(px, y, plankW - 1.5, plankH - 1.5);
 
-        // Veta cálida de madera
-        ctx.fillStyle = "rgba(75, 35, 10, 0.12)";
-        ctx.fillRect(px, y + 8, plankW - 2, 1.5);
-        ctx.fillRect(px, y + 19, plankW - 2, 1);
+        // Vetas sutiles de madera
+        ctx.fillStyle = "rgba(70, 32, 10, 0.10)";
+        ctx.fillRect(px, y + 10, plankW - 2, 1.5);
+        ctx.fillRect(px, y + 22, plankW - 2, 1);
       }
     }
 
-    ctx.strokeStyle = "rgba(55, 25, 8, 0.55)";
+    // Juntas finas entre listones
+    ctx.strokeStyle = "rgba(50, 22, 8, 0.55)";
     ctx.lineWidth = 1.2;
     for (let y = 0; y <= 1024; y += plankH) {
       ctx.beginPath();
@@ -58,7 +53,8 @@ export class Floor {
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(0.45, 0.45);
+    // Escala métrica real: tablas de 1.0 m x 11 cm
+    texture.repeat.set(0.25, 0.25);
     return texture;
   }
 
@@ -66,43 +62,37 @@ export class Floor {
     const pts = DIORAMA_CONFIG.floorPolygon;
     const shape = new THREE.Shape();
 
-    // En Shape 2D usamos (x, -z) para que al rotar -90° en X coincida con (x, z) en 3D
     shape.moveTo(pts[0].x, -pts[0].z);
     for (let i = 1; i < pts.length; i++) {
       shape.lineTo(pts[i].x, -pts[i].z);
     }
     shape.closePath();
 
-    // 1. Superficie de parquet de roble cálido
-    const geo = new THREE.ShapeGeometry(shape);
-    const mat = new THREE.MeshStandardMaterial({
+    // Material 0: Parquet de madera superior
+    const parquetMat = new THREE.MeshStandardMaterial({
       map: this.createWarmOakTexture(),
-      roughness: 0.42,
-      metalness: 0.05,
+      roughness: 0.38,
+      metalness: 0.03,
     });
 
-    const floorMesh = new THREE.Mesh(geo, mat);
-    floorMesh.rotation.x = -Math.PI / 2;
-    floorMesh.position.y = 0;
-    floorMesh.receiveShadow = true;
-    this.group.add(floorMesh);
+    // Material 1: Canto perimetral de la losa
+    const slabSidesMat = new THREE.MeshStandardMaterial({
+      color: "#4E2C14",
+      roughness: 0.75,
+    });
 
-    // 2. Canto / Losa arquitectónica bajo el suelo (Grosor de maqueta de 25 cm)
+    // Una sola geometría extruida con multi-material (cero Z-fighting)
     const slabGeo = new THREE.ExtrudeGeometry(shape, {
       depth: 0.25,
       bevelEnabled: false,
     });
-    const slabMat = new THREE.MeshStandardMaterial({
-      color: "#6E4726",
-      roughness: 0.7,
-    });
-    const slabMesh = new THREE.Mesh(slabGeo, slabMat);
-    slabMesh.rotation.x = -Math.PI / 2;
-    slabMesh.position.y = -0.25;
-    slabMesh.castShadow = true;
-    slabMesh.receiveShadow = true;
-    this.group.add(slabMesh);
 
+    const floorMesh = new THREE.Mesh(slabGeo, [parquetMat, slabSidesMat]);
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.position.y = -0.25;
+    floorMesh.receiveShadow = true;
+
+    this.group.add(floorMesh);
     this.scene.add(this.group);
   }
 }

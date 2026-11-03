@@ -13,15 +13,15 @@ export class Camera {
   }
 
   setInstance() {
-    // FOV cerrado para emular vista ortogonal/isométrica limpia
+    // FOV estrecho de 26° para perspectiva isométrica de maqueta
     this.instance = new THREE.PerspectiveCamera(
-      28,
+      26,
       this.sizes.width / this.sizes.height,
       0.5,
-      150,
+      160,
     );
-    // Coordenadas calculadas para ver la oficina exactamente desde la esquina frontal derecha
-    this.instance.position.set(22.0, 24.0, 24.0);
+    // Coordenadas simétricas diagonales a 45°
+    this.instance.position.set(25.0, 26.0, 25.0);
     this.scene.add(this.instance);
   }
 
@@ -29,9 +29,9 @@ export class Camera {
     this.controls = new OrbitControls(this.instance, this.canvas);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
-    this.controls.target.set(0, 0.5, 0);
+    this.controls.target.set(0, 1.2, 0);
 
-    this.controls.maxPolarAngle = Math.PI / 2.35;
+    this.controls.maxPolarAngle = Math.PI / 2.3;
     this.controls.minDistance = 15.0;
     this.controls.maxDistance = 65.0;
   }
