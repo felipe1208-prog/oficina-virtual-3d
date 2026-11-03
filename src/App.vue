@@ -10,7 +10,6 @@ const loadProgress = ref(0);
 const isReady = ref(false);
 const selectedAgentId = ref(null);
 
-// Estados reactivos de todos los agentes
 const agentStates = reactive({
   architect: "WORKING",
   backend: "WORKING",
@@ -46,12 +45,14 @@ onMounted(() => {
   resources.startLoading();
 });
 
-function setAgentManualStatus(status) {
+function setAgentStatus(status) {
   if (!selectedAgentId.value || !experience) return;
-  const character = experience.world.characters.get(selectedAgentId.value);
-  if (character) {
-    character.setStatus(status);
-  }
+  experience.setAgentStatus(selectedAgentId.value, status);
+}
+
+function sendSelectedAgentToWater() {
+  if (!selectedAgentId.value || !experience) return;
+  experience.sendAgentToWater(selectedAgentId.value);
 }
 
 onBeforeUnmount(() => {
@@ -86,7 +87,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Panel lateral informativo con control de estados -->
+    <!-- Panel lateral interactivo -->
     <transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="opacity-0 translate-x-8"
@@ -142,6 +143,13 @@ onBeforeUnmount(() => {
                     agentStates[selectedAgentId] === 'THINKING',
                   'bg-slate-800 text-slate-300 border border-slate-700':
                     agentStates[selectedAgentId] === 'IDLE',
+                  'bg-sky-950/80 text-sky-400 border border-sky-800': [
+                    'WALKING',
+                    'BREAK',
+                    'RETURNING',
+                    'LEAVING_DESK',
+                    'SITTING_DOWN',
+                  ].includes(agentStates[selectedAgentId]),
                 }"
               >
                 ● {{ agentStates[selectedAgentId] }}
@@ -149,31 +157,44 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <!-- Acciones de control directo -->
+          <!-- Modos en escritorio -->
           <div>
             <span class="text-slate-400 uppercase tracking-wider text-[10px]"
               >Forzar Comportamiento</span
             >
             <div class="grid grid-cols-3 gap-2 mt-1.5">
               <button
-                @click="setAgentManualStatus('WORKING')"
-                class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded text-[11px] font-medium text-slate-200 transition-colors"
+                @click="setAgentStatus('WORKING')"
+                class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded text-[11px] font-medium text-slate-200 transition-colors cursor-pointer"
               >
                 Working
               </button>
               <button
-                @click="setAgentManualStatus('THINKING')"
-                class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded text-[11px] font-medium text-slate-200 transition-colors"
+                @click="setAgentStatus('THINKING')"
+                class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded text-[11px] font-medium text-slate-200 transition-colors cursor-pointer"
               >
                 Thinking
               </button>
               <button
-                @click="setAgentManualStatus('IDLE')"
-                class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded text-[11px] font-medium text-slate-200 transition-colors"
+                @click="setAgentStatus('IDLE')"
+                class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded text-[11px] font-medium text-slate-200 transition-colors cursor-pointer"
               >
                 Idle
               </button>
             </div>
+          </div>
+
+          <!-- Movilidad -->
+          <div>
+            <span class="text-slate-400 uppercase tracking-wider text-[10px]"
+              >Movilidad por la Oficina</span
+            >
+            <button
+              @click="sendSelectedAgentToWater"
+              class="w-full mt-1.5 px-3 py-2 bg-sky-950/70 hover:bg-sky-900 border border-sky-800 rounded text-xs font-medium text-sky-200 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>💧</span> Enviar al Dispensador de Agua
+            </button>
           </div>
 
           <div>

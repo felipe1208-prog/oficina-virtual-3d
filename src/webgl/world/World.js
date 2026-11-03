@@ -11,12 +11,79 @@ export class World {
 
     this.stations = new Map();
     this.characters = new Map();
+    this.charactersList = [];
     this.workstationFactory = new WorkstationFactory(this.resources);
 
+    // Coordenada Z del pasillo principal
+    this.HALLWAY_Z = 0.55;
+
+    this.initVisibleCorridors();
     this.initStations();
     this.initKitchenZone();
     this.initLoungeZone();
     this.initPlants();
+  }
+
+  /**
+   * Construye pasillos visibles con baldosas oscuras y líneas guía
+   */
+  initVisibleCorridors() {
+    const corridorGroup = new THREE.Group();
+    corridorGroup.name = "office-corridors";
+
+    const corridorMat = new THREE.MeshStandardMaterial({
+      color: "#151922",
+      roughness: 0.85,
+      metalness: 0.1,
+    });
+
+    const borderMat = new THREE.MeshBasicMaterial({
+      color: "#283347",
+    });
+
+    const lineMat = new THREE.MeshBasicMaterial({
+      color: "#38BDF8",
+      transparent: true,
+      opacity: 0.35,
+    });
+
+    const createPathSegment = (
+      width,
+      length,
+      posX,
+      posZ,
+      isVertical = false,
+    ) => {
+      const geo = new THREE.PlaneGeometry(width, length);
+      const mesh = new THREE.Mesh(geo, corridorMat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(posX, 0.012, posZ);
+      mesh.receiveShadow = true;
+      corridorGroup.add(mesh);
+
+      // Línea guía central
+      const guideGeo = new THREE.PlaneGeometry(
+        isVertical ? 0.04 : width * 0.95,
+        isVertical ? length * 0.95 : 0.04,
+      );
+      const guide = new THREE.Mesh(guideGeo, lineMat);
+      guide.rotation.x = -Math.PI / 2;
+      guide.position.set(posX, 0.014, posZ);
+      corridorGroup.add(guide);
+    };
+
+    // Pasillo principal horizontal
+    createPathSegment(9.6, 1.25, 0, this.HALLWAY_Z, false);
+
+    // Ramales hacia los escritorios
+    createPathSegment(0.9, 1.2, -2.6, 1.35, true); // Cluster izquierdo
+    createPathSegment(0.9, 1.2, 0.2, 1.35, true); // Centro
+    createPathSegment(0.9, 1.2, 3.2, 1.35, true); // Derecha
+
+    // Ramal hacia la zona de agua
+    createPathSegment(1.0, 1.5, 0.9, 1.55, true);
+
+    this.scene.add(corridorGroup);
   }
 
   placeFittedModel(assetName, position, fitOptions, rotationY = 0) {
@@ -56,14 +123,22 @@ export class World {
       this.stations.set(stationConfig.id, group);
 
       if (character) {
+        // El modelo del personaje se agrega a la escena en coordenadas de mundo
+        this.scene.add(character.model);
+
         character.onStatusChange = (agentId, status) => {
           this.experience.onAgentStatusChange?.(agentId, status);
         };
 
-        // Proveedor de destino con selección de ranura libre para evitar sobreposiciones
         character.destinationProvider = () =>
           this.getWaterCoolerDestination(stationConfig.id);
+        character.routeGenerator = (id, targetPos) =>
+          this.generateCorridorRoute(id, targetPos);
+        character.returnRouteGenerator = (id) =>
+          this.generateReturnCorridorRoute(id);
+
         this.characters.set(stationConfig.id, character);
+        this.charactersList.push(character);
       }
     });
   }
@@ -72,11 +147,10 @@ export class World {
     const coolerPos = ZONE_PROPS.kitchen?.waterCooler?.position;
     if (!coolerPos) return null;
 
-    // Ranuras independientes frente al dispensador (lado izquierdo, lado derecho y espera)
     const slots = [
-      new THREE.Vector3(coolerPos.x - 0.45, 0, coolerPos.z + 0.75),
-      new THREE.Vector3(coolerPos.x + 0.45, 0, coolerPos.z + 0.75),
-      new THREE.Vector3(coolerPos.x, 0, coolerPos.z + 1.35),
+      new THREE.Vector3(coolerPos.x - 0.4, 0, coolerPos.z + 0.85),
+      new THREE.Vector3(coolerPos.x + 0.4, 0, coolerPos.z + 0.85),
+      new THREE.Vector3(coolerPos.x, 0, coolerPos.z + 1.45),
     ];
 
     for (const slot of slots) {
@@ -87,8 +161,7 @@ export class World {
           char.status === "BREAK" ||
           (char.status === "WALKING" && char.roamTarget)
         ) {
-          const charPos = char.getWorldPosition();
-          if (charPos.distanceTo(slot) < 0.5) {
+          if (char.model.position.distanceTo(slot) < 0.5) {
             isOccupied = true;
             break;
           }
@@ -102,37 +175,64 @@ export class World {
     return { name: "Dispensador de Agua", position: slots[0] };
   }
 
-  checkAgentCollisions() {
-    const charList = Array.from(this.characters.values());
+  /**
+   * Genera los waypoints estrictos siguiendo la red de pasillos
+   */
+  generateCorridorRoute(agentId, targetPos) {
+    const stationGroup = this.stations.get(agentId);
+    const Y = -0.34;
+    if (!stationGroup) return [targetPos];
 
-    for (let i = 0; i < charList.length; i++) {
-      const charA = charList[i];
-      charA.isBlocked = false;
+    // 1. Despeje lateral de la silla
+    const sideClearWorld = stationGroup.localToWorld(
+      new THREE.Vector3(-0.65, Y, 0.46),
+    );
+    sideClearWorld.y = Y;
 
-      if (charA.status !== "WALKING" && charA.status !== "RETURNING") continue;
+    // 2. Salida hacia el ramal del escritorio
+    const aisleWorld = stationGroup.localToWorld(
+      new THREE.Vector3(-0.65, Y, 1.3),
+    );
+    aisleWorld.y = Y;
 
-      const posA = charA.getWorldPosition();
+    // 3. Conexión con el pasillo central
+    const hallwayEntry = new THREE.Vector3(aisleWorld.x, Y, this.HALLWAY_Z);
 
-      for (let j = 0; j < charList.length; j++) {
-        if (i === j) continue;
-        const charB = charList[j];
-        const posB = charB.getWorldPosition();
-        const dist = posA.distanceTo(posB);
+    // 4. Avance por el pasillo principal hasta la altura del objetivo
+    const hallwayExit = new THREE.Vector3(targetPos.x, Y, this.HALLWAY_Z);
 
-        // Si hay otro avatar a menos de 0.8m en el cono de avance, charA frena
-        if (dist < 0.8) {
-          const forward = new THREE.Vector3(0, 0, 1).applyAxisAngle(
-            new THREE.Vector3(0, 1, 0),
-            charA.model.rotation.y,
-          );
-          const toB = new THREE.Vector3().subVectors(posB, posA).normalize();
-          if (forward.dot(toB) > 0.35) {
-            charA.isBlocked = true;
-            break;
-          }
-        }
-      }
-    }
+    // 5. Destino final
+    const finalDest = targetPos.clone();
+    finalDest.y = Y;
+
+    return [sideClearWorld, aisleWorld, hallwayEntry, hallwayExit, finalDest];
+  }
+
+  generateReturnCorridorRoute(agentId) {
+    const stationGroup = this.stations.get(agentId);
+    const Y = -0.34;
+    if (!stationGroup) return [];
+
+    const sideClearWorld = stationGroup.localToWorld(
+      new THREE.Vector3(-0.65, Y, 0.46),
+    );
+    sideClearWorld.y = Y;
+
+    const aisleWorld = stationGroup.localToWorld(
+      new THREE.Vector3(-0.65, Y, 1.3),
+    );
+    aisleWorld.y = Y;
+
+    const hallwayEntry = new THREE.Vector3(aisleWorld.x, Y, this.HALLWAY_Z);
+    const currentPos = this.characters.get(agentId).model.position;
+    const hallwayStart = new THREE.Vector3(currentPos.x, Y, this.HALLWAY_Z);
+
+    const standWorld = stationGroup.localToWorld(
+      new THREE.Vector3(-0.15, Y, 0.46),
+    );
+    standWorld.y = Y;
+
+    return [hallwayStart, hallwayEntry, aisleWorld, sideClearWorld, standWorld];
   }
 
   initKitchenZone() {
@@ -190,9 +290,8 @@ export class World {
   }
 
   update(delta) {
-    this.checkAgentCollisions();
-    this.characters.forEach((character) => {
-      character.update(delta);
+    this.charactersList.forEach((character) => {
+      character.update(delta, this.charactersList);
     });
   }
 }

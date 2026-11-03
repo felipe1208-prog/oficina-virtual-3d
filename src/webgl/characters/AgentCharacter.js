@@ -7,32 +7,36 @@ export class AgentCharacter {
     this.rawClips = rawClips;
     this.onStatusChange = onStatusChange;
 
-    // Alturas calibradas: sentado sobre el asiento vs pies en la cuadrícula del piso
+    // Alturas calibradas
     this.Y_SITTING = -0.02;
     this.Y_STANDING = -0.34;
 
-    // Puntos de la estación en coordenadas locales
-    this.SEAT_LOCAL_POS = new THREE.Vector3(-0.15, this.Y_SITTING, 0.46);
-    this.STAND_LOCAL_POS = new THREE.Vector3(-0.15, this.Y_STANDING, 0.46);
-    this.AISLE_LOCAL_POS = new THREE.Vector3(-0.15, this.Y_STANDING, 1.25);
+    // Puntos de anclaje mundiales
+    this.seatWorldPos = new THREE.Vector3();
+    this.standWorldPos = new THREE.Vector3();
+    this.seatWorldRotationY = Math.PI;
 
     this.status = "WORKING";
     this.mixer = null;
     this.actions = new Map();
     this.currentAction = null;
 
-    // Navegación por pasillos y velocidad realista
+    // Locomoción (+25% de velocidad)
     this.waypoints = [];
     this.currentWaypointIndex = 0;
-    this.walkSpeed = 0.55; // Velocidad de paso de oficina (m/s)
+    this.walkSpeed = 0.44; // 0.35 + 25%
     this.roamTarget = null;
     this.breakTimer = 0;
     this.transitionTimer = 0;
-    this.isBlocked = false;
     this.destinationProvider = null;
 
-    this.stateTimer = 14 + Math.random() * 10;
-    this.roamCooldown = 45 + Math.random() * 35;
+    // Sensor de proximidad
+    this.sensorRange = 1.15;
+    this.avoidanceForce = new THREE.Vector3();
+    this.yieldTimer = 0;
+
+    this.stateTimer = 16 + Math.random() * 12;
+    this.roamCooldown = 50 + Math.random() * 30;
 
     this.initModel();
     this.initAnimations();
@@ -41,7 +45,6 @@ export class AgentCharacter {
   initModel() {
     this.model.name = `character-${this.config.id}`;
     this.model.scale.setScalar(1.08);
-    this.model.rotation.y = Math.PI;
 
     this.model.traverse((child) => {
       if (child.isMesh) {
@@ -55,6 +58,21 @@ export class AgentCharacter {
         }
       }
     });
+  }
+
+  setWorldAnchors(stationGroup) {
+    stationGroup.updateMatrixWorld(true);
+    this.seatWorldPos = stationGroup.localToWorld(
+      new THREE.Vector3(-0.15, this.Y_SITTING, 0.46),
+    );
+    this.standWorldPos = stationGroup.localToWorld(
+      new THREE.Vector3(-0.15, this.Y_STANDING, 0.46),
+    );
+    this.seatWorldRotationY = stationGroup.rotation.y + Math.PI;
+
+    // Posicionar sentado en el mundo
+    this.model.position.copy(this.seatWorldPos);
+    this.model.rotation.y = this.seatWorldRotationY;
   }
 
   retargetClip(clip, newName) {
@@ -81,14 +99,12 @@ export class AgentCharacter {
           }
         }
 
-        // Elimina el salto horizontal de raíz en SitToStand y StandToSit
-        if (newName === "sitToStand" || newName === "standToSit") {
-          const x0 = track.values[0];
-          const z0 = track.values[2];
-          for (let i = 0; i < track.values.length; i += 3) {
-            track.values[i] = x0;
-            track.values[i + 2] = z0;
-          }
+        // Bloqueo de Root Motion en X y Z
+        const x0 = track.values[0];
+        const z0 = track.values[2];
+        for (let i = 0; i < track.values.length; i += 3) {
+          track.values[i] = x0;
+          track.values[i + 2] = z0;
         }
       }
     });
@@ -118,14 +134,14 @@ export class AgentCharacter {
       this.actions.set(name, action);
     };
 
-    registerLoop("typing", "typing", 0.95 + Math.random() * 0.12);
-    registerLoop("sittingIdle", "sittingIdle", 0.85 + Math.random() * 0.15);
+    registerLoop("typing", "typing", 1.0);
+    registerLoop("sittingIdle", "sittingIdle", 0.85);
     registerOnce("sitToType", "sitToType", 1.0);
     registerOnce("typeToSit", "typeToSit", 1.0);
     registerOnce("sitToStand", "sitToStand", 1.0);
     registerOnce("standToSit", "standToSit", 1.0);
     registerLoop("standingIdle", "standingIdle", 0.85);
-    registerLoop("walking", "walking", 0.85);
+    registerLoop("walking", "walking", 0.88); // Sincronizado a 0.44 m/s
 
     this.mixer.addEventListener("finished", (e) => {
       const finishedAction = e.action;
@@ -200,54 +216,89 @@ export class AgentCharacter {
   onStoodUp() {
     this.setStatus("WALKING");
     this.playAction("walking", 0.25);
-    this.model.position.copy(this.STAND_LOCAL_POS);
+    this.model.position.copy(this.standWorldPos);
 
-    const parent = this.model.parent;
-    if (!parent || !this.roamTarget) return;
-
-    // Trazado de pasillo predefinido en coordenadas locales de la estación
-    const aisleWorld = parent.localToWorld(this.AISLE_LOCAL_POS.clone());
-    const centralHallwayWorld = new THREE.Vector3(
-      aisleWorld.x * 0.3,
-      0,
-      aisleWorld.z * 0.3,
-    );
-
-    const aisleLocal = parent.worldToLocal(aisleWorld.clone());
-    aisleLocal.y = this.Y_STANDING;
-
-    const hallwayLocal = parent.worldToLocal(centralHallwayWorld.clone());
-    hallwayLocal.y = this.Y_STANDING;
-
-    const destLocal = parent.worldToLocal(this.roamTarget.worldPos.clone());
-    destLocal.y = this.Y_STANDING;
-
-    this.waypoints = [aisleLocal, hallwayLocal, destLocal];
-    this.currentWaypointIndex = 0;
+    // Generar ruta de salida hacia el pasillo
+    if (this.routeGenerator) {
+      this.waypoints = this.routeGenerator(
+        this.config.id,
+        this.roamTarget.worldPos,
+      );
+      this.currentWaypointIndex = 0;
+    }
   }
 
   onSatDown() {
-    this.model.position.copy(this.SEAT_LOCAL_POS);
-    this.model.rotation.y = Math.PI;
+    this.model.position.copy(this.seatWorldPos);
+    this.model.rotation.y = this.seatWorldRotationY;
     this.setStatus("WORKING");
   }
 
   getWorldPosition() {
-    const worldPos = new THREE.Vector3();
-    this.model.getWorldPosition(worldPos);
-    return worldPos;
+    return this.model.position.clone();
   }
 
-  update(delta) {
+  /**
+   * Sensor de proximidad: desvío lateral y cesión de paso
+   */
+  updateProximitySensor(allCharacters) {
+    this.avoidanceForce.set(0, 0, 0);
+    if (this.status !== "WALKING" && this.status !== "RETURNING") return;
+
+    const myPos = this.model.position;
+    const myForward = new THREE.Vector3(0, 0, 1).applyAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      this.model.rotation.y,
+    );
+
+    for (const other of allCharacters) {
+      if (other === this) continue;
+      const otherPos = other.model.position;
+      const toOther = new THREE.Vector3().subVectors(otherPos, myPos);
+      toOther.y = 0;
+      const dist = toOther.length();
+
+      if (dist < this.sensorRange) {
+        toOther.normalize();
+        const dot = myForward.dot(toOther);
+
+        // Otro agente frente al cono de visión
+        if (dot > 0.35) {
+          // Fuerza lateral perpendicular hacia la derecha
+          const lateral = new THREE.Vector3(-myForward.z, 0, myForward.x);
+          const side = toOther.dot(lateral) > 0 ? -1 : 1;
+          const weight = (this.sensorRange - dist) / this.sensorRange;
+
+          this.avoidanceForce.addScaledVector(lateral, side * weight * 1.4);
+
+          // Si están a menos de 0.45m, cede el paso temporalmente
+          if (dist < 0.45 && this.config.id > other.config.id) {
+            this.yieldTimer = 0.35;
+          }
+        }
+      }
+    }
+  }
+
+  update(delta, allCharacters = []) {
     if (this.mixer) {
       this.mixer.update(delta);
     }
 
-    // Interpolación gradual de altura durante transiciones físicas de asiento
+    this.updateProximitySensor(allCharacters);
+
+    if (this.yieldTimer > 0) {
+      this.yieldTimer -= delta;
+      if (this.currentAction !== this.actions.get("standingIdle")) {
+        this.playAction("standingIdle", 0.2);
+      }
+      return;
+    }
+
     if (this.status === "LEAVING_DESK") {
       this.transitionTimer += delta;
       const dur = this.actions.get("sitToStand")?.getClip().duration || 1.8;
-      const t = Math.min(this.transitionTimer / (dur * 0.9), 1.0);
+      const t = Math.min(this.transitionTimer / (dur * 0.85), 1.0);
       this.model.position.y = THREE.MathUtils.lerp(
         this.Y_SITTING,
         this.Y_STANDING,
@@ -256,7 +307,7 @@ export class AgentCharacter {
     } else if (this.status === "SITTING_DOWN") {
       this.transitionTimer += delta;
       const dur = this.actions.get("standToSit")?.getClip().duration || 1.8;
-      const t = Math.min(this.transitionTimer / (dur * 0.9), 1.0);
+      const t = Math.min(this.transitionTimer / (dur * 0.85), 1.0);
       this.model.position.y = THREE.MathUtils.lerp(
         this.Y_STANDING,
         this.Y_SITTING,
@@ -309,11 +360,15 @@ export class AgentCharacter {
       } else if (this.status === "RETURNING") {
         this.setStatus("SITTING_DOWN");
         this.transitionTimer = 0;
-        this.model.position.copy(this.STAND_LOCAL_POS);
-        this.model.rotation.y = Math.PI;
+        this.model.position.copy(this.standWorldPos);
+        this.model.rotation.y = this.seatWorldRotationY;
         this.playAction("standToSit", 0.25);
       }
       return;
+    }
+
+    if (this.currentAction !== this.actions.get("walking")) {
+      this.playAction("walking", 0.2);
     }
 
     const currentTarget = this.waypoints[this.currentWaypointIndex];
@@ -324,58 +379,32 @@ export class AgentCharacter {
     dir.y = 0;
     const distance = dir.length();
 
-    if (distance < 0.2) {
+    if (distance < 0.22) {
       this.currentWaypointIndex++;
       return;
     }
 
     dir.normalize();
 
-    // Rotación suave orientada a la dirección de marcha
-    const targetAngle = Math.atan2(dir.x, dir.z);
+    // Integración de desvío del sensor de proximidad
+    const steerDir = dir.clone().add(this.avoidanceForce).normalize();
+
+    const targetAngle = Math.atan2(steerDir.x, steerDir.z);
     let diff = targetAngle - this.model.rotation.y;
     while (diff < -Math.PI) diff += Math.PI * 2;
     while (diff > Math.PI) diff -= Math.PI * 2;
-    this.model.rotation.y += diff * Math.min(delta * 6, 1);
+    this.model.rotation.y += diff * Math.min(delta * 7, 1);
 
-    // Detención preventiva si hay otro agente delante
-    if (this.isBlocked) {
-      if (this.currentAction !== this.actions.get("standingIdle")) {
-        this.playAction("standingIdle", 0.2);
-      }
-      return;
-    } else {
-      if (this.currentAction !== this.actions.get("walking")) {
-        this.playAction("walking", 0.2);
-      }
-    }
-
-    this.model.position.addScaledVector(dir, this.walkSpeed * delta);
+    this.model.position.addScaledVector(steerDir, this.walkSpeed * delta);
   }
 
   startReturnToSeat() {
     this.setStatus("RETURNING");
     this.playAction("walking", 0.25);
 
-    const parent = this.model.parent;
-    if (!parent) return;
-
-    const aisleWorld = parent.localToWorld(this.AISLE_LOCAL_POS.clone());
-    const centralHallwayWorld = new THREE.Vector3(
-      aisleWorld.x * 0.3,
-      0,
-      aisleWorld.z * 0.3,
-    );
-
-    const hallwayLocal = parent.worldToLocal(centralHallwayWorld.clone());
-    hallwayLocal.y = this.Y_STANDING;
-
-    const aisleLocal = parent.worldToLocal(aisleWorld.clone());
-    aisleLocal.y = this.Y_STANDING;
-
-    const standLocal = this.STAND_LOCAL_POS.clone();
-
-    this.waypoints = [hallwayLocal, aisleLocal, standLocal];
-    this.currentWaypointIndex = 0;
+    if (this.returnRouteGenerator) {
+      this.waypoints = this.returnRouteGenerator(this.config.id);
+      this.currentWaypointIndex = 0;
+    }
   }
 }

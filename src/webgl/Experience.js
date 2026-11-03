@@ -35,7 +35,6 @@ export class Experience {
 
     this.world = new World(this);
 
-    // Manejador de clics
     this.raycasterHandler = new RaycasterHandler(this, (agentId) => {
       this.handleStationSelect(agentId);
     });
@@ -63,13 +62,20 @@ export class Experience {
     }
   }
 
-  /**
-   * Helper para cambiar manualmente el estado de un agente desde la UI
-   */
   setAgentStatus(agentId, status) {
     const character = this.world?.characters.get(agentId);
     if (character) {
       character.setStatus(status);
+    }
+  }
+
+  sendAgentToWater(agentId) {
+    const character = this.world?.characters.get(agentId);
+    if (character && character.destinationProvider) {
+      const dest = character.destinationProvider();
+      if (dest) {
+        character.startRoam(dest.position, dest.name);
+      }
     }
   }
 

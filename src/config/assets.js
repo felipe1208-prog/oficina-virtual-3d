@@ -62,4 +62,24 @@ export const ASSETS_MANIFEST = [
     type: "fbx",
     path: "/models/animations/Sitting Idle.fbx",
   },
+  {
+    name: "animSitToStand",
+    type: "fbx",
+    path: "/models/animations/Sit To Stand.fbx",
+  },
+  {
+    name: "animStandToSit",
+    type: "fbx",
+    path: "/models/animations/Stand To Sit.fbx",
+  },
+  {
+    name: "animStandingIdle",
+    type: "fbx",
+    path: "/models/animations/Standing Idle.fbx",
+  },
+  {
+    name: "animWalking",
+    type: "fbx",
+    path: "/models/animations/Walking.fbx",
+  },
 ];

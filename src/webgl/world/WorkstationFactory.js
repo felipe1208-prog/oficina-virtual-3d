@@ -56,7 +56,7 @@ export class WorkstationFactory {
       stationGroup.add(desk);
     }
 
-    // 2. Configuración Dual Monitor Cóncava (fija al fondo)
+    // 2. Configuración Dual Monitor Cóncava
     const monitorRaw = this.resources.get("monitor");
     if (monitorRaw) {
       const monitorLeft = fitModel(monitorRaw, { height: 0.44 });
@@ -76,7 +76,7 @@ export class WorkstationFactory {
       stationGroup.add(monitorRight);
     }
 
-    // 3. Teclado adelantado a Z = -0.065m (alineado con la caída de dedos)
+    // 3. Teclado
     const keyboardRaw = this.resources.get("keyboard");
     if (keyboardRaw) {
       this.normalizeMaterials(keyboardRaw);
@@ -86,7 +86,7 @@ export class WorkstationFactory {
       stationGroup.add(keyboard);
     }
 
-    // 4. Mousepad y Mouse en su zona ergonómica habitual (Z = 0.06m)
+    // 4. Mousepad y Mouse
     const mousepadRaw = this.resources.get("mousepad");
     if (mousepadRaw) {
       this.normalizeMaterials(mousepadRaw);
@@ -125,23 +125,21 @@ export class WorkstationFactory {
     let agentCharacter = null;
     const characterMesh = this.resources.getSkinned("character");
 
-    const typingClips = this.resources.getAnimations("animTyping");
-    const sitToTypeClips = this.resources.getAnimations("animSitToType");
-    const typeToSitClips = this.resources.getAnimations("animTypeToSit");
-    const sittingIdleClips = this.resources.getAnimations("animSittingIdle");
-
     const rawClips = {
-      typing: typingClips[0] || null,
-      sitToType: sitToTypeClips[0] || null,
-      typeToSit: typeToSitClips[0] || null,
-      sittingIdle: sittingIdleClips[0] || null,
+      typing: this.resources.getAnimations("animTyping")[0] || null,
+      sittingIdle: this.resources.getAnimations("animSittingIdle")[0] || null,
+      sitToType: this.resources.getAnimations("animSitToType")[0] || null,
+      typeToSit: this.resources.getAnimations("animTypeToSit")[0] || null,
+      sitToStand: this.resources.getAnimations("animSitToStand")[0] || null,
+      standToSit: this.resources.getAnimations("animStandToSit")[0] || null,
+      standingIdle: this.resources.getAnimations("animStandingIdle")[0] || null,
+      walking: this.resources.getAnimations("animWalking")[0] || null,
     };
 
     if (characterMesh) {
       this.normalizeMaterials(characterMesh);
       agentCharacter = new AgentCharacter(config, characterMesh, rawClips);
-      agentCharacter.model.position.set(WORK_X, -0.02, SEAT_Z);
-      stationGroup.add(agentCharacter.model);
+      agentCharacter.setWorldAnchors(stationGroup);
     }
 
     // 7. Anillo delimitador en el piso
