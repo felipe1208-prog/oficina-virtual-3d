@@ -9,7 +9,9 @@ const canvasRef = ref(null);
 const loadProgress = ref(0);
 const isReady = ref(false);
 const selectedAgentId = ref(null);
+const timeMode = ref("auto"); // 'day' | 'night' | 'auto'
 
+// Estados reactivos sincronizados con la FSM de cada agente
 const agentStates = reactive({
   architect: "WORKING",
   backend: "WORKING",
@@ -55,6 +57,19 @@ function sendSelectedAgentToWater() {
   experience.sendAgentToWater(selectedAgentId.value);
 }
 
+function setLightingMode(mode) {
+  timeMode.value = mode;
+  if (!experience) return;
+
+  if (mode === "day") {
+    experience.setDayNightFactor(0.0, false);
+  } else if (mode === "night") {
+    experience.setDayNightFactor(0.5, false);
+  } else if (mode === "auto") {
+    experience.setDayNightFactor(0.0, true);
+  }
+}
+
 onBeforeUnmount(() => {
   experience?.destroy();
 });
@@ -74,7 +89,7 @@ onBeforeUnmount(() => {
       <div class="w-72 space-y-3">
         <div class="flex justify-between text-xs tracking-wide text-slate-400">
           <span class="font-medium text-slate-300"
-            >Inicializando entorno 3D</span
+            >Inicializando Oficina 3D</span
           >
           <span>{{ loadProgress }}%</span>
         </div>
@@ -87,7 +102,59 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Panel lateral interactivo -->
+    <!-- Barra superior de control ambiental (Día / Noche) -->
+    <header
+      v-if="isReady"
+      class="absolute top-6 left-6 flex items-center gap-3 px-4 py-2.5 rounded-lg bg-slate-900/85 backdrop-blur-md border border-slate-800 shadow-xl z-20"
+    >
+      <div class="flex flex-col pr-2 border-r border-slate-800">
+        <span
+          class="text-[10px] tracking-wider uppercase font-semibold text-slate-400"
+          >Ambiente</span
+        >
+        <span class="text-xs font-medium text-slate-200">Ciclo Solar</span>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <button
+          @click="setLightingMode('day')"
+          :class="[
+            'px-2.5 py-1.5 rounded text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5',
+            timeMode === 'day'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+              : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/50',
+          ]"
+        >
+          <span>☀️</span> Día
+        </button>
+
+        <button
+          @click="setLightingMode('night')"
+          :class="[
+            'px-2.5 py-1.5 rounded text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5',
+            timeMode === 'night'
+              ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
+              : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/50',
+          ]"
+        >
+          <span>🌙</span> Noche
+        </button>
+
+        <button
+          @click="setLightingMode('auto')"
+          :class="[
+            'px-2.5 py-1.5 rounded text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5',
+            timeMode === 'auto'
+              ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+              : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/50',
+          ]"
+        >
+          <span>🔄</span> Auto
+        </button>
+      </div>
+    </header>
+
+    <!-- Panel lateral interactivo del agente seleccionado -->
     <transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="opacity-0 translate-x-8"
@@ -98,8 +165,9 @@ onBeforeUnmount(() => {
     >
       <aside
         v-if="selectedAgentId && AGENT_STATIONS[selectedAgentId]"
-        class="absolute top-6 right-6 w-96 p-5 rounded-lg bg-slate-900/90 backdrop-blur-md border border-slate-800 shadow-xl"
+        class="absolute top-6 right-6 w-96 p-5 rounded-lg bg-slate-900/90 backdrop-blur-md border border-slate-800 shadow-xl z-20"
       >
+        <!-- Cabecera -->
         <div
           class="flex items-start justify-between pb-3 border-b border-slate-800"
         >
@@ -128,7 +196,9 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
+        <!-- Información y acciones -->
         <div class="mt-4 space-y-4 text-xs">
+          <!-- Estado en Vivo -->
           <div>
             <span class="text-slate-400 uppercase tracking-wider text-[10px]"
               >Estado Actual</span
@@ -157,7 +227,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <!-- Modos en escritorio -->
+          <!-- Modos en Escritorio -->
           <div>
             <span class="text-slate-400 uppercase tracking-wider text-[10px]"
               >Forzar Comportamiento</span
@@ -184,7 +254,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <!-- Movilidad -->
+          <!-- Movilidad por Pasillos -->
           <div>
             <span class="text-slate-400 uppercase tracking-wider text-[10px]"
               >Movilidad por la Oficina</span
@@ -197,6 +267,7 @@ onBeforeUnmount(() => {
             </button>
           </div>
 
+          <!-- Directorio Asignado -->
           <div>
             <span class="text-slate-400 uppercase tracking-wider text-[10px]"
               >Directorio asignado</span

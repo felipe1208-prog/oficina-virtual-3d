@@ -3,41 +3,30 @@ import { Sizes } from "./core/Sizes.js";
 import { Camera } from "./core/Camera.js";
 import { Renderer } from "./core/Renderer.js";
 import { World } from "./world/World.js";
-import { RaycasterHandler } from "./interactions/Raycaster.js";
-import { AGENT_STATIONS } from "../config/officeLayout.js";
 
 let instance = null;
 
 export class Experience {
-  constructor(
-    canvas = null,
-    resources = null,
-    onSelectStation = null,
-    onAgentStatusChange = null,
-  ) {
+  constructor(canvas = null, resources = null) {
     if (instance) return instance;
     instance = this;
 
     this.canvas = canvas;
     this.resources = resources;
-    this.onSelectStation = onSelectStation;
-    this.onAgentStatusChange = onAgentStatusChange;
 
     this.scene = new THREE.Scene();
-    // Tono crepuscular acogedor de fondo
-    this.scene.background = new THREE.Color("#141824");
+    // Fondo de estudio cálido claro idéntico a la imagen
+    this.scene.background = new THREE.Color("#F7F5F2");
 
     this.sizes = new Sizes(this.canvas.parentElement);
     this.camera = new Camera(this);
     this.renderer = new Renderer(this);
 
+    this.dayNightCycle = 0.0;
+    this.isAutoCycle = false;
+
     this.initLighting();
-
     this.world = new World(this);
-
-    this.raycasterHandler = new RaycasterHandler(this, (agentId) => {
-      this.handleStationSelect(agentId);
-    });
 
     this.sizes.addEventListener("resize", () => {
       this.camera.resize();
@@ -49,48 +38,23 @@ export class Experience {
     this.animationFrameId = requestAnimationFrame(this.tick);
   }
 
-  handleStationSelect(agentId) {
-    if (agentId && AGENT_STATIONS[agentId]) {
-      const stationPos = AGENT_STATIONS[agentId].position;
-      this.camera.focusOn(stationPos);
-    } else {
-      this.camera.resetView();
-    }
-
-    if (this.onSelectStation) {
-      this.onSelectStation(agentId);
-    }
-  }
-
-  setAgentStatus(agentId, status) {
-    const character = this.world?.characters.get(agentId);
-    if (character) {
-      character.setStatus(status);
-    }
-  }
-
-  sendAgentToWater(agentId) {
-    const character = this.world?.characters.get(agentId);
-    if (character && character.destinationProvider) {
-      const dest = character.destinationProvider();
-      if (dest) {
-        character.startRoam(dest.position, dest.name);
-      }
-    }
+  setDayNightFactor(factor, auto = false) {
+    this.dayNightCycle = THREE.MathUtils.clamp(factor, 0.0, 1.0);
+    this.isAutoCycle = auto;
   }
 
   initLighting() {
-    // 1. Luz Ambiental cálida de relleno
-    const ambientLight = new THREE.AmbientLight("#F3EBDD", 0.65);
-    this.scene.add(ambientLight);
+    // Luz ambiental crema cálida
+    this.ambientLight = new THREE.AmbientLight("#FFF7EB", 0.95);
+    this.scene.add(this.ambientLight);
 
-    // 2. Luz Hemisférica (cielo cálido / rebote de piso de madera)
-    const hemiLight = new THREE.HemisphereLight("#FFF2DE", "#4A2A14", 0.45);
-    this.scene.add(hemiLight);
+    // Rebote cálido de roble y paredes
+    this.hemiLight = new THREE.HemisphereLight("#FFFDF9", "#7A4B24", 0.55);
+    this.scene.add(this.hemiLight);
 
-    // 3. Luz Solar Directa a través de las ventanas posteriores (sombras largas)
-    this.sunLight = new THREE.DirectionalLight("#FFF3DB", 1.85);
-    this.sunLight.position.set(-6, 12, -14);
+    // Sol principal entrando por los ventanales con tono cálido matutino
+    this.sunLight = new THREE.DirectionalLight("#FFEED4", 1.85);
+    this.sunLight.position.set(-18, 25, -16);
     this.sunLight.target.position.set(0, 0, 0);
     this.scene.add(this.sunLight.target);
     this.sunLight.castShadow = true;
@@ -98,15 +62,14 @@ export class Experience {
     this.sunLight.shadow.mapSize.width = 2048;
     this.sunLight.shadow.mapSize.height = 2048;
     this.sunLight.shadow.camera.near = 0.5;
-    this.sunLight.shadow.camera.far = 40;
+    this.sunLight.shadow.camera.far = 65;
 
-    const d = 11;
+    const d = 18;
     this.sunLight.shadow.camera.left = -d;
     this.sunLight.shadow.camera.right = d;
     this.sunLight.shadow.camera.top = d;
     this.sunLight.shadow.camera.bottom = -d;
     this.sunLight.shadow.bias = -0.0003;
-
     this.scene.add(this.sunLight);
   }
 
@@ -120,7 +83,6 @@ export class Experience {
 
   destroy() {
     cancelAnimationFrame(this.animationFrameId);
-    this.raycasterHandler?.destroy();
     this.sizes.destroy();
     this.camera.destroy();
     this.renderer.destroy();
