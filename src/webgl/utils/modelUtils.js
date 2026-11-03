@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 /**
- * Escala un modelo estático a dimensiones métricas y apoya su base en y = 0
+ * Escala un modelo estático y apoya su base en y = 0
  */
 export function fitModel(model, { height, width, depth, maxDim } = {}) {
   const wrapper = new THREE.Group();
@@ -33,6 +33,32 @@ export function fitModel(model, { height, width, depth, maxDim } = {}) {
   model.position.x = -center.x;
   model.position.y = -box.min.y;
   model.position.z = -center.z;
+
+  return wrapper;
+}
+
+/**
+ * Normaliza y centra al personaje avatar a escala humana (1.25m)
+ */
+export function fitCharacter(characterGroup, targetHeight = 1.25) {
+  const wrapper = new THREE.Group();
+  wrapper.add(characterGroup);
+
+  const box = new THREE.Box3().setFromObject(characterGroup);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+
+  const scaleFactor = targetHeight / (size.y || 1);
+  characterGroup.scale.setScalar(scaleFactor);
+
+  box.setFromObject(characterGroup);
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+
+  // Centrado estricto horizontal y pies en la base (0, 0, 0)
+  characterGroup.position.x = -center.x;
+  characterGroup.position.y = -box.min.y;
+  characterGroup.position.z = -center.z;
 
   return wrapper;
 }

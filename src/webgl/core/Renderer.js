@@ -27,7 +27,7 @@ export class Renderer {
 
     // Configuración de sombras suaves
     this.instance.shadowMap.enabled = true;
-    this.instance.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.instance.shadowMap.type = THREE.PCFShadowMap;
   }
 
   resize() {

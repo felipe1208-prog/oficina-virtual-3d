@@ -11,6 +11,7 @@ export class World {
 
     this.workstationFactory = new WorkstationFactory(this.resources);
     this.stations = new Map();
+    this.characters = new Map();
 
     this.initStations();
     this.initKitchenZone();
@@ -20,62 +21,51 @@ export class World {
 
   initStations() {
     Object.values(AGENT_STATIONS).forEach((stationConfig) => {
-      const station = this.workstationFactory.create(stationConfig);
-      this.scene.add(station);
-      this.stations.set(stationConfig.id, station);
+      const { group, character } =
+        this.workstationFactory.create(stationConfig);
+      this.scene.add(group);
+      this.stations.set(stationConfig.id, group);
+      if (character) {
+        this.characters.set(stationConfig.id, character);
+      }
     });
   }
 
   initKitchenZone() {
     const { coffeeMachine, waterCooler, trashcan } = ZONE_PROPS.kitchen;
-
-    // Cafetera (0.42m de alto)
     this.placeFittedModel("coffeeMachine", coffeeMachine.position, {
       height: 0.42,
     });
-
-    // Dispensador de agua (1.45m de alto)
     this.placeFittedModel("waterCooler", waterCooler.position, {
       height: 1.45,
     });
-
-    // Papelera (0.40m de alto)
     this.placeFittedModel("trashcan", trashcan.position, { height: 0.4 });
   }
 
   initLoungeZone() {
     const { pingPongTable, couchMedium, tvScreen, coffeeTable } =
       ZONE_PROPS.lounge;
-
-    // Mesa de Ping-Pong (longitud de 2.74m)
     this.placeFittedModel("pingPongTable", pingPongTable.position, {
       width: 2.74,
     });
-
-    // Sofá mediano (ancho de 1.9m) rotado hacia el frente
     this.placeFittedModel(
       "couchMedium",
       couchMedium.position,
       { width: 1.9 },
       -Math.PI / 2,
     );
-
-    // Televisor (ancho de 1.2m)
     this.placeFittedModel(
       "tvScreen",
       { ...tvScreen.position, y: 0.6 },
       { width: 1.2 },
       Math.PI / 2,
     );
-
-    // Mesa de centro (alto de 0.42m)
     this.placeFittedModel("coffeeTable", coffeeTable.position, {
       height: 0.42,
     });
   }
 
   initEnvironmentProps() {
-    // Ventilador de techo centrado a 4.5m de altura (diámetro 1.3m)
     const fanRaw = this.resources.get("ceilingFan");
     if (fanRaw) {
       this.workstationFactory.normalizeMaterials(fanRaw);
@@ -85,7 +75,6 @@ export class World {
       this.ceilingFan = fan;
     }
 
-    // Plantas decorativas (alto 0.85m)
     ZONE_PROPS.environment.houseplants.forEach((plant) => {
       this.placeFittedModel("houseplant", plant.position, { height: 0.85 });
     });
@@ -104,8 +93,14 @@ export class World {
   }
 
   update(delta) {
+    // 1. Rotación del ventilador
     if (this.ceilingFan) {
       this.ceilingFan.rotation.y += 0.8 * delta;
     }
+
+    // 2. Actualizar la animación autónoma de cada agente
+    this.characters.forEach((character) => {
+      character.update(delta);
+    });
   }
 }

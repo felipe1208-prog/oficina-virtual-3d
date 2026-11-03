@@ -1,3 +1,4 @@
+<!-- src/App.vue -->
 <script setup>
 import { onMounted, ref, onBeforeUnmount } from "vue";
 import { Resources } from "./webgl/core/Resources";
@@ -39,10 +40,9 @@ onBeforeUnmount(() => {
   <main
     class="w-full h-screen relative bg-slate-950 overflow-hidden font-sans select-none text-slate-200"
   >
-    <!-- Lienzo 3D -->
     <canvas ref="canvasRef" class="w-full h-full block outline-none" />
 
-    <!-- Barra de carga minimalista inicial -->
+    <!-- Barra de carga sobria inicial -->
     <div
       v-if="!isReady"
       class="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center p-6 z-50"
@@ -63,7 +63,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Panel lateral informativo (Drawer sobrio al hacer clic en un puesto) -->
+    <!-- Panel lateral informativo al hacer clic -->
     <transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="opacity-0 translate-x-8"
@@ -98,7 +98,7 @@ onBeforeUnmount(() => {
 
           <button
             @click="experience?.handleStationSelect(null)"
-            class="text-slate-400 hover:text-slate-200 p-1 text-sm rounded hover:bg-slate-800 transition-colors"
+            class="text-slate-400 hover:text-slate-200 p-1 text-sm rounded hover:bg-slate-800 transition-colors cursor-pointer"
           >
             ✕
           </button>
@@ -113,7 +113,7 @@ onBeforeUnmount(() => {
               <span
                 class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium"
               >
-                IDLE (En espera)
+                IDLE (Activo)
               </span>
             </div>
           </div>

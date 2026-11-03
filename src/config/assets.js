@@ -42,4 +42,19 @@ export const ASSETS_MANIFEST = [
   { name: "trashcan", path: "/models/environment/trashcan.glb" },
   { name: "window", path: "/models/environment/window.glb" },
   { name: "houseplant", path: "/models/environment/houseplant.glb" },
+  {
+    name: "animTyping",
+    type: "fbx",
+    path: "/models/animations/Typing.fbx",
+  },
+  {
+    name: "animSitToType",
+    type: "fbx",
+    path: "/models/animations/Sit To Type.fbx",
+  },
+  {
+    name: "animTypeToSit",
+    type: "fbx",
+    path: "/models/animations/Type To Sit.fbx",
+  },
 ];

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js";
 
 export class Resources extends EventTarget {
@@ -20,6 +21,8 @@ export class Resources extends EventTarget {
 
     this.gltfLoader = new GLTFLoader();
     this.gltfLoader.setDRACOLoader(this.dracoLoader);
+
+    this.fbxLoader = new FBXLoader();
   }
 
   startLoading() {
@@ -29,19 +32,32 @@ export class Resources extends EventTarget {
     }
 
     for (const asset of this.assetsList) {
-      this.gltfLoader.load(
-        asset.path,
-        (gltf) => {
-          this.onItemLoaded(asset.name, gltf);
-        },
-        undefined,
-        (error) => {
-          console.warn(`[Resources] Error cargando "${asset.name}":`, error);
-          const fallback = this.createFallbackModel(asset.name);
-          this.onItemLoaded(asset.name, { scene: fallback, isFallback: true });
-        },
-      );
+      if (asset.type === "fbx") {
+        this.fbxLoader.load(
+          asset.path,
+          (fbx) => this.onItemLoaded(asset.name, fbx),
+          undefined,
+          (error) => this.handleError(asset.name, error),
+        );
+      } else {
+        this.gltfLoader.load(
+          asset.path,
+          (gltf) => this.onItemLoaded(asset.name, gltf),
+          undefined,
+          (error) => this.handleError(asset.name, error),
+        );
+      }
     }
+  }
+
+  handleError(name, error) {
+    console.warn(`[Resources] Error cargando "${name}":`, error);
+    const fallback = this.createFallbackModel(name);
+    this.onItemLoaded(name, {
+      scene: fallback,
+      isFallback: true,
+      animations: [],
+    });
   }
 
   onItemLoaded(name, resource) {
@@ -79,22 +95,21 @@ export class Resources extends EventTarget {
     return group;
   }
 
-  /**
-   * Clona objetos estáticos normales (muebles, props)
-   */
   get(name) {
     const resource = this.items.get(name);
     if (!resource) return null;
-    return resource.scene.clone(true);
+    return resource.scene ? resource.scene.clone(true) : resource.clone(true);
   }
 
-  /**
-   * Clona modelos con esqueleto/huesos (personajes) sin que colapsen entre sí
-   */
   getSkinned(name) {
     const resource = this.items.get(name);
     if (!resource) return null;
-    return SkeletonUtils.clone(resource.scene);
+    return SkeletonUtils.clone(resource.scene || resource);
+  }
+
+  getAnimations(name) {
+    const resource = this.items.get(name);
+    return resource?.animations || [];
   }
 
   destroy() {
