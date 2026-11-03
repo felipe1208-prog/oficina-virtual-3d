@@ -128,11 +128,13 @@ export class WorkstationFactory {
     const typingClips = this.resources.getAnimations("animTyping");
     const sitToTypeClips = this.resources.getAnimations("animSitToType");
     const typeToSitClips = this.resources.getAnimations("animTypeToSit");
+    const sittingIdleClips = this.resources.getAnimations("animSittingIdle");
 
     const rawClips = {
       typing: typingClips[0] || null,
       sitToType: sitToTypeClips[0] || null,
       typeToSit: typeToSitClips[0] || null,
+      sittingIdle: sittingIdleClips[0] || null,
     };
 
     if (characterMesh) {

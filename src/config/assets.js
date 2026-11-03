@@ -57,4 +57,9 @@ export const ASSETS_MANIFEST = [
     type: "fbx",
     path: "/models/animations/Type To Sit.fbx",
   },
+  {
+    name: "animSittingIdle",
+    type: "fbx",
+    path: "/models/animations/Sitting Idle.fbx",
+  },
 ];

@@ -9,13 +9,19 @@ import { OFFICE_BOUNDS, AGENT_STATIONS } from "../config/officeLayout.js";
 let instance = null;
 
 export class Experience {
-  constructor(canvas = null, resources = null, onSelectStation = null) {
+  constructor(
+    canvas = null,
+    resources = null,
+    onSelectStation = null,
+    onAgentStatusChange = null,
+  ) {
     if (instance) return instance;
     instance = this;
 
     this.canvas = canvas;
     this.resources = resources;
     this.onSelectStation = onSelectStation;
+    this.onAgentStatusChange = onAgentStatusChange;
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color("#0F1219");
@@ -54,6 +60,16 @@ export class Experience {
 
     if (this.onSelectStation) {
       this.onSelectStation(agentId);
+    }
+  }
+
+  /**
+   * Helper para cambiar manualmente el estado de un agente desde la UI
+   */
+  setAgentStatus(agentId, status) {
+    const character = this.world?.characters.get(agentId);
+    if (character) {
+      character.setStatus(status);
     }
   }
 

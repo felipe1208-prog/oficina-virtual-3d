@@ -1,6 +1,5 @@
-<!-- src/App.vue -->
 <script setup>
-import { onMounted, ref, onBeforeUnmount } from "vue";
+import { onMounted, ref, reactive, onBeforeUnmount } from "vue";
 import { Resources } from "./webgl/core/Resources";
 import { Experience } from "./webgl/Experience";
 import { ASSETS_MANIFEST } from "./config/assets";
@@ -10,6 +9,15 @@ const canvasRef = ref(null);
 const loadProgress = ref(0);
 const isReady = ref(false);
 const selectedAgentId = ref(null);
+
+// Estados reactivos de todos los agentes
+const agentStates = reactive({
+  architect: "WORKING",
+  backend: "WORKING",
+  frontend: "WORKING",
+  qa: "WORKING",
+});
+
 let experience = null;
 
 onMounted(() => {
@@ -22,14 +30,29 @@ onMounted(() => {
   resources.addEventListener("ready", () => {
     isReady.value = true;
     if (canvasRef.value) {
-      experience = new Experience(canvasRef.value, resources, (agentId) => {
-        selectedAgentId.value = agentId;
-      });
+      experience = new Experience(
+        canvasRef.value,
+        resources,
+        (agentId) => {
+          selectedAgentId.value = agentId;
+        },
+        (agentId, status) => {
+          agentStates[agentId] = status;
+        },
+      );
     }
   });
 
   resources.startLoading();
 });
+
+function setAgentManualStatus(status) {
+  if (!selectedAgentId.value || !experience) return;
+  const character = experience.world.characters.get(selectedAgentId.value);
+  if (character) {
+    character.setStatus(status);
+  }
+}
 
 onBeforeUnmount(() => {
   experience?.destroy();
@@ -42,7 +65,7 @@ onBeforeUnmount(() => {
   >
     <canvas ref="canvasRef" class="w-full h-full block outline-none" />
 
-    <!-- Barra de carga sobria inicial -->
+    <!-- Barra de carga inicial -->
     <div
       v-if="!isReady"
       class="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center p-6 z-50"
@@ -63,7 +86,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Panel lateral informativo al hacer clic -->
+    <!-- Panel lateral informativo con control de estados -->
     <transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="opacity-0 translate-x-8"
@@ -107,14 +130,49 @@ onBeforeUnmount(() => {
         <div class="mt-4 space-y-4 text-xs">
           <div>
             <span class="text-slate-400 uppercase tracking-wider text-[10px]"
-              >Estado</span
+              >Estado Actual</span
             >
             <div class="flex items-center gap-2 mt-1">
               <span
-                class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium"
+                class="px-2.5 py-1 rounded font-medium text-xs tracking-wide transition-colors"
+                :class="{
+                  'bg-emerald-950/80 text-emerald-400 border border-emerald-800':
+                    agentStates[selectedAgentId] === 'WORKING',
+                  'bg-amber-950/80 text-amber-400 border border-amber-800':
+                    agentStates[selectedAgentId] === 'THINKING',
+                  'bg-slate-800 text-slate-300 border border-slate-700':
+                    agentStates[selectedAgentId] === 'IDLE',
+                }"
               >
-                IDLE (Activo)
+                ● {{ agentStates[selectedAgentId] }}
               </span>
+            </div>
+          </div>
+
+          <!-- Acciones de control directo -->
+          <div>
+            <span class="text-slate-400 uppercase tracking-wider text-[10px]"
+              >Forzar Comportamiento</span
+            >
+            <div class="grid grid-cols-3 gap-2 mt-1.5">
+              <button
+                @click="setAgentManualStatus('WORKING')"
+                class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded text-[11px] font-medium text-slate-200 transition-colors"
+              >
+                Working
+              </button>
+              <button
+                @click="setAgentManualStatus('THINKING')"
+                class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded text-[11px] font-medium text-slate-200 transition-colors"
+              >
+                Thinking
+              </button>
+              <button
+                @click="setAgentManualStatus('IDLE')"
+                class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded text-[11px] font-medium text-slate-200 transition-colors"
+              >
+                Idle
+              </button>
             </div>
           </div>
 
@@ -123,10 +181,12 @@ onBeforeUnmount(() => {
               >Directorio asignado</span
             >
             <p
-              class="mt-1 px-2.5 py-1.5 rounded bg-slate-950/70 border border-slate-800 text-slate-300"
+              class="mt-1 px-2.5 py-1.5 rounded bg-slate-950/70 border border-slate-800 text-slate-300 font-mono text-[11px]"
             >
               agents-workspace/{{
-                AGENT_STATIONS[selectedAgentId].name.split(" ")[0]
+                AGENT_STATIONS[selectedAgentId].name
+                  .split(" ")[0]
+                  .toLowerCase()
               }}/
             </p>
           </div>
