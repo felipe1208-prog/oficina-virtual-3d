@@ -11,7 +11,6 @@ export class AgentCharacter {
     this.Y_SITTING = -0.02;
     this.Y_STANDING = -0.34;
 
-    // Puntos de anclaje mundiales
     this.seatWorldPos = new THREE.Vector3();
     this.standWorldPos = new THREE.Vector3();
     this.seatWorldRotationY = Math.PI;
@@ -21,17 +20,17 @@ export class AgentCharacter {
     this.actions = new Map();
     this.currentAction = null;
 
-    // Locomoción (+25% de velocidad)
+    // Locomoción calibrada (+25% de velocidad adicional)
     this.waypoints = [];
     this.currentWaypointIndex = 0;
-    this.walkSpeed = 0.44; // 0.35 + 25%
+    this.walkSpeed = 0.55; // Incrementada 25% (0.44 * 1.25)
     this.roamTarget = null;
     this.breakTimer = 0;
     this.transitionTimer = 0;
     this.destinationProvider = null;
 
-    // Sensor de proximidad
-    this.sensorRange = 1.15;
+    // Sensor de evasión lateral
+    this.sensorRange = 1.2;
     this.avoidanceForce = new THREE.Vector3();
     this.yieldTimer = 0;
 
@@ -70,7 +69,6 @@ export class AgentCharacter {
     );
     this.seatWorldRotationY = stationGroup.rotation.y + Math.PI;
 
-    // Posicionar sentado en el mundo
     this.model.position.copy(this.seatWorldPos);
     this.model.rotation.y = this.seatWorldRotationY;
   }
@@ -99,7 +97,7 @@ export class AgentCharacter {
           }
         }
 
-        // Bloqueo de Root Motion en X y Z
+        // Neutralizar desplazamiento horizontal de raíz
         const x0 = track.values[0];
         const z0 = track.values[2];
         for (let i = 0; i < track.values.length; i += 3) {
@@ -141,7 +139,7 @@ export class AgentCharacter {
     registerOnce("sitToStand", "sitToStand", 1.0);
     registerOnce("standToSit", "standToSit", 1.0);
     registerLoop("standingIdle", "standingIdle", 0.85);
-    registerLoop("walking", "walking", 0.88); // Sincronizado a 0.44 m/s
+    registerLoop("walking", "walking", 1.1); // Cadencia sincronizada con 0.55 m/s
 
     this.mixer.addEventListener("finished", (e) => {
       const finishedAction = e.action;
@@ -160,7 +158,7 @@ export class AgentCharacter {
     this.playAction("typing", 0.1);
   }
 
-  playAction(name, crossFadeDuration = 0.25) {
+  playAction(name, crossFadeDuration = 0.22) {
     const nextAction = this.actions.get(name);
     if (!nextAction) return;
 
@@ -215,10 +213,9 @@ export class AgentCharacter {
 
   onStoodUp() {
     this.setStatus("WALKING");
-    this.playAction("walking", 0.25);
+    this.playAction("walking", 0.22);
     this.model.position.copy(this.standWorldPos);
 
-    // Generar ruta de salida hacia el pasillo
     if (this.routeGenerator) {
       this.waypoints = this.routeGenerator(
         this.config.id,
@@ -238,9 +235,6 @@ export class AgentCharacter {
     return this.model.position.clone();
   }
 
-  /**
-   * Sensor de proximidad: desvío lateral y cesión de paso
-   */
   updateProximitySensor(allCharacters) {
     this.avoidanceForce.set(0, 0, 0);
     if (this.status !== "WALKING" && this.status !== "RETURNING") return;
@@ -262,18 +256,15 @@ export class AgentCharacter {
         toOther.normalize();
         const dot = myForward.dot(toOther);
 
-        // Otro agente frente al cono de visión
         if (dot > 0.35) {
-          // Fuerza lateral perpendicular hacia la derecha
           const lateral = new THREE.Vector3(-myForward.z, 0, myForward.x);
           const side = toOther.dot(lateral) > 0 ? -1 : 1;
           const weight = (this.sensorRange - dist) / this.sensorRange;
 
-          this.avoidanceForce.addScaledVector(lateral, side * weight * 1.4);
+          this.avoidanceForce.addScaledVector(lateral, side * weight * 1.5);
 
-          // Si están a menos de 0.45m, cede el paso temporalmente
           if (dist < 0.45 && this.config.id > other.config.id) {
-            this.yieldTimer = 0.35;
+            this.yieldTimer = 0.3;
           }
         }
       }
@@ -386,9 +377,7 @@ export class AgentCharacter {
 
     dir.normalize();
 
-    // Integración de desvío del sensor de proximidad
     const steerDir = dir.clone().add(this.avoidanceForce).normalize();
-
     const targetAngle = Math.atan2(steerDir.x, steerDir.z);
     let diff = targetAngle - this.model.rotation.y;
     while (diff < -Math.PI) diff += Math.PI * 2;
@@ -400,7 +389,7 @@ export class AgentCharacter {
 
   startReturnToSeat() {
     this.setStatus("RETURNING");
-    this.playAction("walking", 0.25);
+    this.playAction("walking", 0.22);
 
     if (this.returnRouteGenerator) {
       this.waypoints = this.returnRouteGenerator(this.config.id);

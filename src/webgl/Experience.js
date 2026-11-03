@@ -4,7 +4,7 @@ import { Camera } from "./core/Camera.js";
 import { Renderer } from "./core/Renderer.js";
 import { World } from "./world/World.js";
 import { RaycasterHandler } from "./interactions/Raycaster.js";
-import { OFFICE_BOUNDS, AGENT_STATIONS } from "../config/officeLayout.js";
+import { AGENT_STATIONS } from "../config/officeLayout.js";
 
 let instance = null;
 
@@ -24,14 +24,14 @@ export class Experience {
     this.onAgentStatusChange = onAgentStatusChange;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color("#0F1219");
+    // Tono crepuscular acogedor de fondo
+    this.scene.background = new THREE.Color("#141824");
 
     this.sizes = new Sizes(this.canvas.parentElement);
     this.camera = new Camera(this);
     this.renderer = new Renderer(this);
 
     this.initLighting();
-    this.initBaseEnvironment();
 
     this.world = new World(this);
 
@@ -80,57 +80,34 @@ export class Experience {
   }
 
   initLighting() {
-    const ambientLight = new THREE.AmbientLight("#E8ECF5", 0.85);
+    // 1. Luz Ambiental cálida de relleno
+    const ambientLight = new THREE.AmbientLight("#F3EBDD", 0.65);
     this.scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight("#FFFFFF", "#242B3B", 0.45);
+    // 2. Luz Hemisférica (cielo cálido / rebote de piso de madera)
+    const hemiLight = new THREE.HemisphereLight("#FFF2DE", "#4A2A14", 0.45);
     this.scene.add(hemiLight);
 
-    this.sunLight = new THREE.DirectionalLight("#FFF9F0", 1.7);
-    this.sunLight.position.set(16, 22, 12);
+    // 3. Luz Solar Directa a través de las ventanas posteriores (sombras largas)
+    this.sunLight = new THREE.DirectionalLight("#FFF3DB", 1.85);
+    this.sunLight.position.set(-6, 12, -14);
+    this.sunLight.target.position.set(0, 0, 0);
+    this.scene.add(this.sunLight.target);
     this.sunLight.castShadow = true;
 
     this.sunLight.shadow.mapSize.width = 2048;
     this.sunLight.shadow.mapSize.height = 2048;
     this.sunLight.shadow.camera.near = 0.5;
-    this.sunLight.shadow.camera.far = 50;
+    this.sunLight.shadow.camera.far = 40;
 
-    const d = 12;
+    const d = 11;
     this.sunLight.shadow.camera.left = -d;
     this.sunLight.shadow.camera.right = d;
     this.sunLight.shadow.camera.top = d;
     this.sunLight.shadow.camera.bottom = -d;
-    this.sunLight.shadow.bias = -0.0004;
+    this.sunLight.shadow.bias = -0.0003;
 
     this.scene.add(this.sunLight);
-  }
-
-  initBaseEnvironment() {
-    const floorGeo = new THREE.BoxGeometry(
-      OFFICE_BOUNDS.width,
-      OFFICE_BOUNDS.height,
-      OFFICE_BOUNDS.depth,
-    );
-    const floorMat = new THREE.MeshStandardMaterial({
-      color: OFFICE_BOUNDS.floorColor,
-      roughness: 0.9,
-      metalness: 0.05,
-      flatShading: true,
-    });
-
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.position.y = -OFFICE_BOUNDS.height / 2;
-    floor.receiveShadow = true;
-    this.scene.add(floor);
-
-    const grid = new THREE.GridHelper(
-      Math.max(OFFICE_BOUNDS.width, OFFICE_BOUNDS.depth),
-      Math.max(OFFICE_BOUNDS.width, OFFICE_BOUNDS.depth),
-      OFFICE_BOUNDS.gridColor,
-      "#1E2433",
-    );
-    grid.position.y = 0.01;
-    this.scene.add(grid);
   }
 
   tick() {
