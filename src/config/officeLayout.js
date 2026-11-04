@@ -16,7 +16,7 @@ export const DIORAMA_CONFIG = {
     { x: -12.0, z: 9.0 },
   ],
 
-  // Muros perimetrales continuos con ventanales
+  // Muros perimetrales continuos
   perimeterWalls: [
     {
       p1: { x: -12.0, z: 9.0 },
@@ -36,7 +36,7 @@ export const DIORAMA_CONFIG = {
     {
       p1: { x: -4.5, z: -9.2 },
       p2: { x: 4.2, z: -9.2 },
-      windows: [{ offset: 4.35, width: 3.6, height: 2.1 }],
+      windows: [], // Muro ciego para TV y pizarra
     },
     { p1: { x: 4.2, z: -9.2 }, p2: { x: 4.2, z: -8.5 }, windows: [] },
     {
@@ -74,7 +74,6 @@ export const DIORAMA_CONFIG = {
 
   // Muros divisorios interiores
   interiorWalls: {
-    // Corre paralelo a la alfombra vertical (en el eje Z), liberando la ventana
     kitchenWall: {
       x: -2.0,
       startZ: 3.2,
@@ -82,7 +81,6 @@ export const DIORAMA_CONFIG = {
       height: 2.1,
       thickness: 0.28,
     },
-    // Corre horizontal sobre X, empotrado a la pared este del lounge
     loungeTVWall: {
       startX: 4.8,
       endX: 12.0,
@@ -92,14 +90,14 @@ export const DIORAMA_CONFIG = {
     },
   },
 
-  // Alfombras de tránsito
+  // Alfombras de tránsito con tonos calibrados
   carpets: [
     { width: 2.4, length: 11.2, x: -3.3, z: 2.6, color: "#2B323D" }, // Corredor vertical
     { width: 10.5, length: 2.2, x: -1.5, z: -1.5, color: "#2B323D" }, // Corredor horizontal
-    { width: 6.8, length: 4.8, x: 0.0, z: -6.0, color: "#1B2C4E" }, // Reuniones
-    { width: 3.8, length: 3.6, x: -8.2, z: 0.2, color: "#222832" }, // Pod 1
-    { width: 3.8, length: 3.6, x: -8.2, z: 3.8, color: "#222832" }, // Pod 2
-    { width: 6.4, length: 5.4, x: 8.2, z: 4.6, color: "#182846" }, // Lounge
+    { width: 6.8, length: 4.8, x: 0.0, z: -6.0, color: "#383B44" }, // Reuniones (Gris carbón cálido con textura)
+    { width: 3.8, length: 3.6, x: -8.2, z: 0.2, color: "#2E333D" }, // Pod 1
+    { width: 3.8, length: 3.6, x: -8.2, z: 3.8, color: "#2E333D" }, // Pod 2
+    { width: 6.4, length: 5.4, x: 8.2, z: 4.6, color: "#242B38" }, // Lounge
   ],
 };
 

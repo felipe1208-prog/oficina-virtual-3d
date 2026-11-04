@@ -11,35 +11,52 @@ export class CarpetSystem {
     this.scene.add(this.group);
   }
 
-  createCarpetTexture(colorHex) {
+  createCarpetTexture(baseHex) {
     const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 256;
+    canvas.width = 512;
+    canvas.height = 512;
     const ctx = canvas.getContext("2d");
 
-    ctx.fillStyle = colorHex;
-    ctx.fillRect(0, 0, 256, 256);
+    // Base de color
+    ctx.fillStyle = baseHex;
+    ctx.fillRect(0, 0, 512, 512);
 
-    for (let i = 0; i < 256; i += 4) {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.14)";
-      ctx.fillRect(i, 0, 2, 256);
-      ctx.fillRect(0, i, 256, 2);
+    // Trama de tejido entrelazado (Cross-hatch microfibra)
+    for (let x = 0; x < 512; x += 4) {
+      for (let y = 0; y < 512; y += 4) {
+        const noise = (Math.random() - 0.5) * 28;
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0, 0.04 + noise / 500)})`;
+        ctx.fillRect(x, y, 2, 4);
+
+        ctx.fillStyle = `rgba(0, 0, 0, ${Math.max(0, 0.12 - noise / 500)})`;
+        ctx.fillRect(x + 2, y + 2, 2, 2);
+      }
+    }
+
+    // Líneas sutiles de telar para acentuar la textura de la moqueta
+    for (let i = 0; i < 512; i += 8) {
+      ctx.fillStyle = "rgba(255, 255, 255, 0.035)";
+      ctx.fillRect(i, 0, 1, 512);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+      ctx.fillRect(0, i, 512, 1);
     }
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(4, 4);
+    texture.repeat.set(6, 6);
     return texture;
   }
 
   initTextileCarpets() {
     DIORAMA_CONFIG.carpets.forEach((c) => {
+      const carpetTexture = this.createCarpetTexture(c.color);
+
       const mat = new THREE.MeshStandardMaterial({
         color: c.color,
-        map: this.createCarpetTexture(c.color),
-        roughness: 0.95,
-        metalness: 0.02,
+        map: carpetTexture,
+        roughness: 0.82, // Permite brillo difuso para apreciar el tejido
+        metalness: 0.04,
       });
 
       const geo = new THREE.PlaneGeometry(c.width, c.length);

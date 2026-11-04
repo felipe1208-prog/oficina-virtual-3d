@@ -186,14 +186,14 @@ export class GlassPartitions {
     const pEast2 = new THREE.Vector3(m.maxX, 0, m.maxZ);
     this.group.add(this.createGlassSpan(pEast1, pEast2, H, 2));
 
-    // Pizarra de conferencias empotrada
-    const rawWhiteboard = this.resources.get("whiteboard");
-    if (rawWhiteboard) {
-      const wb = rawWhiteboard.clone(true);
-      const fitted = fitModel(wb, { height: 1.45 });
-      fitted.position.set(2.4, 1.95, -9.05);
-      this.group.add(fitted);
-    }
+    // // Pizarra de conferencias empotrada
+    // const rawWhiteboard = this.resources.get("whiteboard");
+    // if (rawWhiteboard) {
+    //   const wb = rawWhiteboard.clone(true);
+    //   const fitted = fitModel(wb, { height: 1.45 });
+    //   fitted.position.set(2.4, 1.95, -9.05);
+    //   this.group.add(fitted);
+    // }
   }
 
   buildPlanterBoxes() {
