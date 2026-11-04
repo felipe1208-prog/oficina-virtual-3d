@@ -191,4 +191,9 @@ export const ASSETS_MANIFEST = [
     type: "gltf",
     path: "/models/lounge/ping-pong-ball.glb",
   },
+  {
+    name: "arcadeMachine",
+    type: "gltf",
+    path: "/models/lounge/arcade-machine.glb",
+  },
 ];

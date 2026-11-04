@@ -19,10 +19,10 @@ export class PingPongArea {
     // 1. Mesa de Ping-Pong reglamentaria (Eje longitudinal Norte-Sur)
     this.initRotatedPingPongTable();
 
-    // 2. Pizarra de torneo fijada al cristal (sin jardineras duplicadas)
+    // 2. Pizarra de torneo fijada al cristal
     this.initGlassMountedWhiteboard();
 
-    // 3. Arcade GLB (rotado 180° hacia la sala), Doble Vending y Taquillas
+    // 3. Arcade GLB (rotado 90° de espaldas a la pared), Doble Vending y Taquillas
     this.initSouthArcadeAndVending();
 
     // 4. Muro Norte: Vitrina de Trofeos, Banco y Cuadros deportivos
@@ -193,7 +193,7 @@ export class PingPongArea {
 
     this.group.add(tableGroup);
 
-    // Palas y pelotas apoyadas en la mesa
+    // Palas y pelotas
     this.createPaddleProcedural(
       tX - 0.35,
       tH + 0.005,
@@ -300,30 +300,30 @@ export class PingPongArea {
     this.group.add(boardGroup);
   }
 
-  // --- 3. ARCADE GLB ROTADO 180° Y DOBLE VENDING (MURO SUR Z = -0.18) ---
+  // --- 3. ARCADE GLB ROTADO 90° DE ESPALDAS A LA PARED (Z = -0.18) ---
   initSouthArcadeAndVending() {
     const wallZ = -0.18;
 
-    // Arcade rotado 180° (rotY = 0) para que la pantalla y los controles miren al frente hacia la sala
+    // Arcade rotado 90° (Math.PI / 2) con la espalda adosada al tabique sur
     const arcade =
       this.place(
         "arcadeMachine",
         { x: 6.2, y: 0.0, z: wallZ },
         { height: 1.78 },
-        0,
+        Math.PI / 2,
       ) ||
       this.place(
         "arcade-machine",
         { x: 6.2, y: 0.0, z: wallZ },
         { height: 1.78 },
-        0,
+        Math.PI / 2,
       );
 
     if (!arcade) {
       this.createProceduralArcade(6.2, 0.0, wallZ);
     }
 
-    // Mueble de casilleros técnicos / Taquillas
+    // Taquillas
     const cabinet = this.place(
       "cubeCabinet",
       { x: 7.7, y: 0.0, z: wallZ },
@@ -518,7 +518,7 @@ export class PingPongArea {
     this.group.add(poster);
   }
 
-  // --- 5. LOUNGE VIP DE ESPECTADORES (MESA DE CENTRO ROTADA 90°) ---
+  // --- 5. LOUNGE VIP DE ESPECTADORES ---
   initSpectatorLounge() {
     const rugX = 10.6;
     const rugZ = -4.5;
@@ -609,7 +609,7 @@ export class PingPongArea {
     this.createBeanBagPuff(9.5, -5.2, "#1E3A8A");
     this.createBeanBagPuff(9.5, -3.8, "#D97706");
 
-    // Mesa de centro de café rotada 90° con sus bebidas agrupadas
+    // Mesa de centro rotada 90°
     const coffeeTableGroup = new THREE.Group();
     coffeeTableGroup.position.set(10.5, 0.0, -4.5);
     coffeeTableGroup.rotation.y = Math.PI / 2;
@@ -647,7 +647,6 @@ export class PingPongArea {
       coffeeTableGroup.add(ctTop);
     }
 
-    // Bebidas sobre la mesa de café rotada
     const glass = this.place(
       "waterGlass",
       { x: -0.15, y: 0.38, z: 0.06 },
@@ -663,7 +662,7 @@ export class PingPongArea {
 
     this.group.add(coffeeTableGroup);
 
-    // Lámpara de pie de diseño
+    // Lámpara de pie
     const lampGroup = new THREE.Group();
     lampGroup.position.set(11.45, 0.0, -6.4);
     const legMat = new THREE.MeshStandardMaterial({
@@ -752,7 +751,6 @@ export class PingPongArea {
   createProceduralArcade(x, y, z) {
     const arcGroup = new THREE.Group();
     arcGroup.position.set(x, y, z);
-    // rotY = 0 para que la pantalla y los controles miren hacia el Norte (-Z, hacia la sala)
     arcGroup.rotation.y = 0;
 
     const w = 0.72,
