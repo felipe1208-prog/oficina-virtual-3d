@@ -17,7 +17,8 @@ export class CharacterModel {
     }
 
     model.name = `character-${config.id}`;
-    model.scale.setScalar(1.08);
+    // 1.14 alarga torso y brazos para conectar cojín de silla y teclas del escritorio
+    model.scale.setScalar(1.14);
 
     model.traverse((child) => {
       if (child.isMesh) {
