@@ -16,7 +16,7 @@ export const DIORAMA_CONFIG = {
     { x: -12.0, z: 9.0 },
   ],
 
-  // Muros perimetrales continuos
+  // Muros perimetrales continuos (muro norte de conferencias sólido sin ventana)
   perimeterWalls: [
     {
       p1: { x: -12.0, z: 9.0 },
@@ -90,14 +90,28 @@ export const DIORAMA_CONFIG = {
     },
   },
 
-  // Alfombras de tránsito con tonos calibrados
+  // Alfombras ordenadas sin solapamiento, con tonos grises y tejido textil
   carpets: [
-    { width: 2.4, length: 11.2, x: -3.3, z: 2.6, color: "#2B323D" }, // Corredor vertical
-    { width: 10.5, length: 2.2, x: -1.5, z: -1.5, color: "#2B323D" }, // Corredor horizontal
-    { width: 6.8, length: 4.8, x: 0.0, z: -6.0, color: "#383B44" }, // Reuniones (Gris carbón cálido con textura)
-    { width: 3.8, length: 3.6, x: -8.2, z: 0.2, color: "#2E333D" }, // Pod 1
-    { width: 3.8, length: 3.6, x: -8.2, z: 3.8, color: "#2E333D" }, // Pod 2
-    { width: 6.4, length: 5.4, x: 8.2, z: 4.6, color: "#242B38" }, // Lounge
+    // Corredor vertical principal (entre Dev Area y Cocina/Lounge)
+    { width: 1.8, length: 8.2, x: -3.1, z: 3.1, color: "#424752" },
+
+    // Corredor horizontal (frente a las mamparas de cristal norte)
+    { width: 9.8, length: 1.8, x: -0.8, z: -1.8, color: "#424752" },
+
+    // Sala de Reuniones
+    { width: 6.8, length: 4.8, x: 0.0, z: -6.0, color: "#3A3F4A" },
+
+    // Pod 1 (Bancada Oeste, 4 puestos junto a ventanas)
+    { width: 3.4, length: 3.4, x: -9.6, z: 5.2, color: "#464C56" },
+
+    // Pod 2 (Bancada Central-Sur, 4 puestos)
+    { width: 3.4, length: 3.4, x: -6.0, z: 5.2, color: "#464C56" },
+
+    // Pod 3 (Isla Focal Norte, 2 puestos con anillo)
+    { width: 2.4, length: 3.2, x: -7.8, z: 1.0, color: "#464C56" },
+
+    // Lounge / Sala de Descanso
+    { width: 6.4, length: 5.4, x: 8.2, z: 4.6, color: "#363C48" },
   ],
 };
 

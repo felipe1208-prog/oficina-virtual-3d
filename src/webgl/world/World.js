@@ -5,6 +5,7 @@ import { GlassPartitions } from "../environment/GlassPartitions.js";
 import { InteriorWalls } from "../environment/InteriorWalls.js";
 import { SupervisorOffice } from "../zones/SupervisorOffice.js";
 import { MeetingRoom } from "../zones/MeetingRoom.js";
+import { DevArea } from "../zones/DevArea.js";
 
 export class World {
   constructor(experience) {
@@ -12,7 +13,7 @@ export class World {
     this.scene = this.experience.scene;
     this.resources = this.experience.resources;
 
-    // 1. Estructura y cerramientos
+    // 1. Cascarón y divisiones de cristal
     this.floor = new Floor(this.scene);
     this.shell = new DioramaShell(this.scene);
     this.carpets = new CarpetSystem(this.scene);
@@ -22,6 +23,9 @@ export class World {
     // 2. Zonas Corporativas Norte
     this.supervisor = new SupervisorOffice(this.experience);
     this.meeting = new MeetingRoom(this.experience);
+
+    // 3. Núcleo Operativo: Área de Desarrollo (10 puestos)
+    this.devArea = new DevArea(this.experience);
   }
 
   update(delta) {
