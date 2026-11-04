@@ -27,6 +27,7 @@ export class Experience {
 
     this.initLighting();
     this.world = new World(this);
+    window.experience = this;
 
     this.sizes.addEventListener("resize", () => {
       this.camera.resize();

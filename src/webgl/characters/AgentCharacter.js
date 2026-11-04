@@ -13,17 +13,17 @@ export class AgentCharacter {
 
     this.seatWorldPos = new THREE.Vector3();
     this.standWorldPos = new THREE.Vector3();
-    this.seatWorldRotationY = Math.PI;
+    this.seatWorldRotationY = 0;
 
     this.status = "WORKING";
     this.mixer = null;
     this.actions = new Map();
     this.currentAction = null;
 
-    // Locomoción calibrada (+25% de velocidad adicional)
+    // Locomoción calibrada
     this.waypoints = [];
     this.currentWaypointIndex = 0;
-    this.walkSpeed = 0.55; // Incrementada 25% (0.44 * 1.25)
+    this.walkSpeed = 0.55;
     this.roamTarget = null;
     this.breakTimer = 0;
     this.transitionTimer = 0;
@@ -49,6 +49,7 @@ export class AgentCharacter {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+        child.frustumCulled = false;
         if (child.material) {
           child.material = child.material.clone();
           child.material.color.set(this.config.color);
@@ -57,6 +58,23 @@ export class AgentCharacter {
         }
       }
     });
+  }
+
+  setSeatPosition(x, z, rotY = 0) {
+    this.seatWorldPos.set(x, this.Y_SITTING, z);
+    this.standWorldPos.set(x, this.Y_STANDING, z);
+    this.seatWorldRotationY = rotY;
+
+    this.model.position.copy(this.seatWorldPos);
+    this.model.rotation.y = this.seatWorldRotationY;
+    this.setStatus("WORKING");
+  }
+
+  setWalkingPosition(x, z, rotY = Math.PI / 2) {
+    this.model.position.set(x, this.Y_STANDING, z);
+    this.model.rotation.y = rotY;
+    this.setStatus("WALKING");
+    this.playAction("walking", 0.1);
   }
 
   setWorldAnchors(stationGroup) {
@@ -97,7 +115,6 @@ export class AgentCharacter {
           }
         }
 
-        // Neutralizar desplazamiento horizontal de raíz
         const x0 = track.values[0];
         const z0 = track.values[2];
         for (let i = 0; i < track.values.length; i += 3) {
@@ -139,11 +156,10 @@ export class AgentCharacter {
     registerOnce("sitToStand", "sitToStand", 1.0);
     registerOnce("standToSit", "standToSit", 1.0);
     registerLoop("standingIdle", "standingIdle", 0.85);
-    registerLoop("walking", "walking", 1.1); // Cadencia sincronizada con 0.55 m/s
+    registerLoop("walking", "walking", 1.1);
 
     this.mixer.addEventListener("finished", (e) => {
       const finishedAction = e.action;
-
       if (finishedAction === this.actions.get("sitToType")) {
         this.playAction("typing", 0.2);
       } else if (finishedAction === this.actions.get("typeToSit")) {
@@ -194,35 +210,10 @@ export class AgentCharacter {
     }
   }
 
-  startRoam(targetWorldPos, targetLabel = "Dispensador") {
-    if (
-      this.status.startsWith("LEAVING") ||
-      this.status.startsWith("WALK") ||
-      this.status === "BREAK" ||
-      this.status === "RETURNING" ||
-      this.status === "SITTING_DOWN"
-    ) {
-      return;
-    }
-
-    this.roamTarget = { worldPos: targetWorldPos, label: targetLabel };
-    this.setStatus("LEAVING_DESK");
-    this.transitionTimer = 0;
-    this.playAction("sitToStand", 0.25);
-  }
-
   onStoodUp() {
     this.setStatus("WALKING");
     this.playAction("walking", 0.22);
     this.model.position.copy(this.standWorldPos);
-
-    if (this.routeGenerator) {
-      this.waypoints = this.routeGenerator(
-        this.config.id,
-        this.roamTarget.worldPos,
-      );
-      this.currentWaypointIndex = 0;
-    }
   }
 
   onSatDown() {
@@ -231,169 +222,9 @@ export class AgentCharacter {
     this.setStatus("WORKING");
   }
 
-  getWorldPosition() {
-    return this.model.position.clone();
-  }
-
-  updateProximitySensor(allCharacters) {
-    this.avoidanceForce.set(0, 0, 0);
-    if (this.status !== "WALKING" && this.status !== "RETURNING") return;
-
-    const myPos = this.model.position;
-    const myForward = new THREE.Vector3(0, 0, 1).applyAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      this.model.rotation.y,
-    );
-
-    for (const other of allCharacters) {
-      if (other === this) continue;
-      const otherPos = other.model.position;
-      const toOther = new THREE.Vector3().subVectors(otherPos, myPos);
-      toOther.y = 0;
-      const dist = toOther.length();
-
-      if (dist < this.sensorRange) {
-        toOther.normalize();
-        const dot = myForward.dot(toOther);
-
-        if (dot > 0.35) {
-          const lateral = new THREE.Vector3(-myForward.z, 0, myForward.x);
-          const side = toOther.dot(lateral) > 0 ? -1 : 1;
-          const weight = (this.sensorRange - dist) / this.sensorRange;
-
-          this.avoidanceForce.addScaledVector(lateral, side * weight * 1.5);
-
-          if (dist < 0.45 && this.config.id > other.config.id) {
-            this.yieldTimer = 0.3;
-          }
-        }
-      }
-    }
-  }
-
   update(delta, allCharacters = []) {
     if (this.mixer) {
       this.mixer.update(delta);
-    }
-
-    this.updateProximitySensor(allCharacters);
-
-    if (this.yieldTimer > 0) {
-      this.yieldTimer -= delta;
-      if (this.currentAction !== this.actions.get("standingIdle")) {
-        this.playAction("standingIdle", 0.2);
-      }
-      return;
-    }
-
-    if (this.status === "LEAVING_DESK") {
-      this.transitionTimer += delta;
-      const dur = this.actions.get("sitToStand")?.getClip().duration || 1.8;
-      const t = Math.min(this.transitionTimer / (dur * 0.85), 1.0);
-      this.model.position.y = THREE.MathUtils.lerp(
-        this.Y_SITTING,
-        this.Y_STANDING,
-        t,
-      );
-    } else if (this.status === "SITTING_DOWN") {
-      this.transitionTimer += delta;
-      const dur = this.actions.get("standToSit")?.getClip().duration || 1.8;
-      const t = Math.min(this.transitionTimer / (dur * 0.85), 1.0);
-      this.model.position.y = THREE.MathUtils.lerp(
-        this.Y_STANDING,
-        this.Y_SITTING,
-        t,
-      );
-    } else if (this.status === "WALKING" || this.status === "RETURNING") {
-      this.model.position.y = this.Y_STANDING;
-      this.navigateAlongPath(delta);
-    } else if (this.status === "BREAK") {
-      this.model.position.y = this.Y_STANDING;
-      this.breakTimer -= delta;
-      if (this.breakTimer <= 0) {
-        this.startReturnToSeat();
-      }
-    } else if (
-      this.status === "WORKING" ||
-      this.status === "THINKING" ||
-      this.status === "IDLE"
-    ) {
-      this.model.position.y = this.Y_SITTING;
-      this.stateTimer -= delta;
-      this.roamCooldown -= delta;
-
-      if (this.roamCooldown <= 0 && this.destinationProvider) {
-        this.roamCooldown = 55 + Math.random() * 35;
-        const dest = this.destinationProvider();
-        if (dest) this.startRoam(dest.position, dest.name);
-      } else if (this.stateTimer <= 0) {
-        this.stateTimer =
-          this.status === "WORKING"
-            ? 12 + Math.random() * 12
-            : 5 + Math.random() * 6;
-        this.setStatus(
-          this.status === "WORKING"
-            ? Math.random() > 0.5
-              ? "THINKING"
-              : "IDLE"
-            : "WORKING",
-        );
-      }
-    }
-  }
-
-  navigateAlongPath(delta) {
-    if (this.currentWaypointIndex >= this.waypoints.length) {
-      if (this.status === "WALKING") {
-        this.setStatus("BREAK");
-        this.playAction("standingIdle", 0.3);
-        this.breakTimer = 6 + Math.random() * 4;
-      } else if (this.status === "RETURNING") {
-        this.setStatus("SITTING_DOWN");
-        this.transitionTimer = 0;
-        this.model.position.copy(this.standWorldPos);
-        this.model.rotation.y = this.seatWorldRotationY;
-        this.playAction("standToSit", 0.25);
-      }
-      return;
-    }
-
-    if (this.currentAction !== this.actions.get("walking")) {
-      this.playAction("walking", 0.2);
-    }
-
-    const currentTarget = this.waypoints[this.currentWaypointIndex];
-    const dir = new THREE.Vector3().subVectors(
-      currentTarget,
-      this.model.position,
-    );
-    dir.y = 0;
-    const distance = dir.length();
-
-    if (distance < 0.22) {
-      this.currentWaypointIndex++;
-      return;
-    }
-
-    dir.normalize();
-
-    const steerDir = dir.clone().add(this.avoidanceForce).normalize();
-    const targetAngle = Math.atan2(steerDir.x, steerDir.z);
-    let diff = targetAngle - this.model.rotation.y;
-    while (diff < -Math.PI) diff += Math.PI * 2;
-    while (diff > Math.PI) diff -= Math.PI * 2;
-    this.model.rotation.y += diff * Math.min(delta * 7, 1);
-
-    this.model.position.addScaledVector(steerDir, this.walkSpeed * delta);
-  }
-
-  startReturnToSeat() {
-    this.setStatus("RETURNING");
-    this.playAction("walking", 0.22);
-
-    if (this.returnRouteGenerator) {
-      this.waypoints = this.returnRouteGenerator(this.config.id);
-      this.currentWaypointIndex = 0;
     }
   }
 }

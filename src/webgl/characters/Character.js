@@ -9,7 +9,7 @@ export class Character {
 
     this.name = options.name || "Agent";
     this.color = options.color || "#0284C7";
-    this.scale = options.scale || 0.0095; // Calibrado para la escala hyper-casual del diorama
+    this.scale = options.scale || 1.08; // Escala exacta calibrada de AgentCharacter
     this.position = options.position || { x: 0, y: 0, z: 0 };
     this.rotationY = options.rotationY || 0;
 
@@ -29,23 +29,46 @@ export class Character {
       return;
     }
 
-    // SkeletonUtils es indispensable para clonar SkinnedMesh sin romper el rig
-    const rawScene = rawGltf.scene ? rawGltf.scene : rawGltf;
-    this.model = SkeletonUtils.clone(rawScene);
+    const sourceScene = rawGltf.scene ? rawGltf.scene : rawGltf;
+    this.model = SkeletonUtils.clone(sourceScene);
     this.model.name = `character-${this.name}`;
 
-    // Material plano y satinado estilizado monocromático (azul, púrpura, amarillo, etc.)
-    const charMat = new THREE.MeshStandardMaterial({
-      color: this.color,
-      roughness: 0.35,
-      metalness: 0.05,
-    });
-
+    // Mapeo e indexación de huesos existentes
+    this.existingNodeNames = new Set();
     this.model.traverse((child) => {
+      if (child.name) {
+        this.existingNodeNames.add(child.name);
+      }
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
-        child.material = charMat;
+        child.frustumCulled = false; // Evita que Three.js oculte la malla animada
+
+        if (child.material) {
+          child.material = child.material.clone();
+          child.material.color.set(this.color);
+          child.material.roughness = 0.85;
+          child.material.metalness = 0.05;
+        }
+      }
+    });
+
+    // Reparación de esqueleto (blindaje contra undefined en bones)
+    this.model.traverse((child) => {
+      if (child.isSkinnedMesh && child.skeleton) {
+        const bones = child.skeleton.bones;
+        for (let i = 0; i < bones.length; i++) {
+          if (!bones[i]) {
+            const fallbackBone =
+              this.model.getObjectByProperty("isBone", true) ||
+              new THREE.Bone();
+            if (!fallbackBone.parent) {
+              this.model.add(fallbackBone);
+            }
+            bones[i] = fallbackBone;
+          }
+        }
+        child.skeleton.update();
       }
     });
 
@@ -53,7 +76,53 @@ export class Character {
     this.model.position.set(this.position.x, this.position.y, this.position.z);
     this.model.rotation.y = this.rotationY;
 
+    this.model.updateWorldMatrix(true, true);
     this.scene.add(this.model);
+  }
+
+  // Normaliza nombres de huesos de Mixamo y escala las posiciones de cm a metros
+  retargetClip(clip, newName) {
+    if (!clip) return null;
+    const retargeted = clip.clone();
+    retargeted.name = newName;
+
+    retargeted.tracks = retargeted.tracks.filter((track) => {
+      // Normalizar nombre de hueso eliminando prefijos de Mixamo
+      track.name = track.name
+        .replace(/.*mixamorig:?/i, "mixamorig")
+        .replace(/^_*/, "");
+
+      const targetNode = track.name.split(".")[0];
+      return this.existingNodeNames.has(targetNode);
+    });
+
+    retargeted.tracks.forEach((track) => {
+      if (track.name.endsWith(".position")) {
+        let hasLargeValues = false;
+        for (let i = 0; i < track.values.length; i++) {
+          if (Math.abs(track.values[i]) > 5) {
+            hasLargeValues = true;
+            break;
+          }
+        }
+        // Conversión de centímetros Mixamo a metros Three.js
+        if (hasLargeValues) {
+          for (let i = 0; i < track.values.length; i++) {
+            track.values[i] *= 0.01;
+          }
+        }
+
+        // Neutralizar desplazamiento horizontal de cadera (evita que se caiga de la silla)
+        const x0 = track.values[0];
+        const z0 = track.values[2];
+        for (let i = 0; i < track.values.length; i += 3) {
+          track.values[i] = x0;
+          track.values[i + 2] = z0;
+        }
+      }
+    });
+
+    return retargeted;
   }
 
   initAnimations(defaultAnimName) {
@@ -61,7 +130,6 @@ export class Character {
 
     this.mixer = new THREE.AnimationMixer(this.model);
 
-    // Mapa de animaciones registradas en el ASSETS_MANIFEST
     const animMap = {
       typing: "animTyping",
       sittingIdle: "animSittingIdle",
@@ -73,20 +141,20 @@ export class Character {
       standToSit: "animStandToSit",
     };
 
-    // Carga de clips FBX en el AnimationMixer del personaje
     Object.entries(animMap).forEach(([key, resourceName]) => {
       const fbx = this.resources.get(resourceName);
       if (fbx && fbx.animations && fbx.animations.length > 0) {
-        const clip = fbx.animations[0].clone();
-        clip.name = key;
-        this.actions[key] = this.mixer.clipAction(clip);
+        const processedClip = this.retargetClip(fbx.animations[0], key);
+        if (processedClip) {
+          this.actions[key] = this.mixer.clipAction(processedClip);
+        }
       }
     });
 
     this.playAnimation(defaultAnimName);
   }
 
-  playAnimation(name, duration = 0.4) {
+  playAnimation(name, duration = 0.25) {
     if (!this.actions[name]) {
       console.warn(
         `[Character] Animación '${name}' no disponible para ${this.name}`,
