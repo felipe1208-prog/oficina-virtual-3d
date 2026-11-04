@@ -29,7 +29,6 @@ export const ANIMATION_DEFS = {
   standToSit: { resource: "animStandToSit", loop: THREE.LoopOnce, speed: 1.0 },
 };
 
-// Altura de asiento calibrada para que el trasero toque el cojín y las manos reposen en el teclado
 const SEAT_Y = 0.035;
 
 export const AGENTS_CONFIG = [
@@ -39,7 +38,7 @@ export const AGENTS_CONFIG = [
     color: "#EAB308",
     role: "seated",
     initialAnimation: "typing",
-    seat: { x: -6.7, y: SEAT_Y, z: 4.3, rotY: 0 },
+    seat: { x: -6.7, y: SEAT_Y, z: 4.18, rotY: 0 },
   },
   // 2. Pod 2 - Puesto Noreste (Fila Norte, mirando al Sur +Z)
   {
@@ -47,7 +46,7 @@ export const AGENTS_CONFIG = [
     color: "#9333EA",
     role: "seated",
     initialAnimation: "typing",
-    seat: { x: -5.3, y: SEAT_Y, z: 4.3, rotY: 0 },
+    seat: { x: -5.3, y: SEAT_Y, z: 4.18, rotY: 0 },
   },
   // 3. Pod 2 - Puesto Sureste (Fila Sur, mirando al Norte -Z)
   {
@@ -55,15 +54,14 @@ export const AGENTS_CONFIG = [
     color: "#0284C7",
     role: "seated",
     initialAnimation: "typing",
-    seat: { x: -5.3, y: SEAT_Y, z: 6.1, rotY: Math.PI },
+    seat: { x: -5.3, y: SEAT_Y, z: 6.22, rotY: Math.PI },
   },
   // 4. Pod 2 - Puesto Suroeste (Fila Sur, mirando al Norte -Z)
-  // Naranja ahora sentado en el puesto libre enfrente de Amarillo
   {
     id: "dev-orange",
     color: "#EA580C",
     role: "seated",
     initialAnimation: "typing",
-    seat: { x: -6.7, y: SEAT_Y, z: 6.1, rotY: Math.PI },
+    seat: { x: -6.7, y: SEAT_Y, z: 6.22, rotY: Math.PI },
   },
 ];
