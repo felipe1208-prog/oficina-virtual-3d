@@ -21,15 +21,14 @@ export class SupervisorOffice {
     this.initChairs();
     this.initStorageAndShelves();
     this.initPlants();
-    this.initGlassWallTV();
 
-    // 2. Nueva ambientación y accesorios
+    // 2. Decoración ajustada
     this.initCabinetBooks();
     this.initTrashcan();
     this.initDeskAndWallDecor();
 
-    // 3. Sistema CCTV en tiempo real en la pantalla
-    this.initCCTVSurveillance();
+    // 3. Montaje del TV y CCTV perfectamente encajados
+    this.initGlassWallTVAndCCTV();
 
     this.scene.add(this.group);
   }
@@ -53,7 +52,7 @@ export class SupervisorOffice {
     return fitted;
   }
 
-  // --- MOBILIARIO INTACTO ---
+  // --- MOBILIARIO PRINCIPAL (INTACTO) ---
   initExecutiveDesk() {
     const desk = this.place(
       "desk",
@@ -83,7 +82,7 @@ export class SupervisorOffice {
       });
     }
 
-    // Monitores 10% más grandes con curvatura cóncava y materiales originales
+    // Monitores 10% más grandes con curvatura y materiales originales
     this.place(
       "monitor",
       { x: -8.67, y: 0.75, z: -5.26 },
@@ -97,7 +96,7 @@ export class SupervisorOffice {
       0.26,
     );
 
-    // Hardware adelantado
+    // Hardware adelantado dentro del tablero
     this.place("keyboard", { x: -8.4, y: 0.752, z: -5.58 }, { width: 0.38 }, 0);
 
     const mousepad = this.place(
@@ -109,9 +108,7 @@ export class SupervisorOffice {
     if (mousepad) {
       mousepad.traverse((c) => {
         if (c.isMesh && c.material) {
-          c.material = c.material.clone();
-          c.material.color.set("#181A22");
-          c.material.roughness = 0.85;
+          c.material = childMatClone(c.material, "#181A22", 0.85);
         }
       });
     }
@@ -200,33 +197,7 @@ export class SupervisorOffice {
     this.place("plantFlowerPot", { x: -11.2, y: 0, z: -7.8 }, { height: 0.95 });
   }
 
-  initGlassWallTV() {
-    const tvPos = { x: -8.4, y: 2.05, z: -2.85 };
-    const tv = this.place("tvFlatScreen", tvPos, { height: 0.95 }, Math.PI);
-    if (tv) {
-      tv.traverse((c) => {
-        if (c.isMesh && c.material) {
-          c.material = c.material.clone();
-          c.material.color.set("#12141A");
-          c.material.roughness = 0.35;
-          c.material.metalness = 0.8;
-        }
-      });
-    }
-
-    const poleGeo = new THREE.CylinderGeometry(0.025, 0.025, 1.25, 16);
-    const poleMat = new THREE.MeshStandardMaterial({
-      color: "#15171E",
-      roughness: 0.35,
-      metalness: 0.85,
-    });
-    const pole = new THREE.Mesh(poleGeo, poleMat);
-    pole.position.set(tvPos.x, tvPos.y + 0.55, tvPos.z + 0.05);
-    pole.castShadow = true;
-    this.group.add(pole);
-  }
-
-  // --- NUEVA DECORACIÓN: LIBROS EN GABINETES ---
+  // --- LIBROS: SOLO DENTRO DE LAS BALDAS (SIN PILAS ENCIMA) ---
   createBookRow(startX, y, startZ, totalWidth, depth, rotY = 0) {
     const rowGroup = new THREE.Group();
     rowGroup.position.set(startX, y, startZ);
@@ -262,7 +233,6 @@ export class SupervisorOffice {
       book.position.set(curX + bookW / 2, bookH / 2, 0);
       book.castShadow = true;
 
-      // Inclinación realista en el extremo de la balda
       if (curX > totalWidth / 2 - 0.12 && idx % 2 === 0) {
         book.rotation.z = -0.16;
         book.position.y -= 0.01;
@@ -276,52 +246,23 @@ export class SupervisorOffice {
     this.group.add(rowGroup);
   }
 
-  createBookStack(x, y, z, count = 3, rotY = 0) {
-    const stackGroup = new THREE.Group();
-    stackGroup.position.set(x, y, z);
-    stackGroup.rotation.y = rotY;
-
-    const colors = ["#831843", "#1E40AF", "#15803D", "#B45309"];
-    let curY = 0;
-    for (let i = 0; i < count; i++) {
-      const w = 0.22 - i * 0.015;
-      const h = 0.038;
-      const d = 0.16 - i * 0.01;
-      const mat = new THREE.MeshStandardMaterial({
-        color: colors[i % colors.length],
-        roughness: 0.5,
-      });
-      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-      b.position.set(0, curY + h / 2, 0);
-      b.rotation.y = i % 2 === 0 ? 0.04 : -0.05;
-      b.castShadow = true;
-      stackGroup.add(b);
-      curY += h;
-    }
-    this.group.add(stackGroup);
-  }
-
   initCabinetBooks() {
-    // 1. Libros en la Librería Alta Norte (3 baldas equipadas)
+    // Baldas interiores de la librería alta norte
     this.createBookRow(-5.5, 0.42, -7.95, 0.88, 0.24, 0);
     this.createBookRow(-5.5, 0.88, -7.95, 0.9, 0.24, 0);
     this.createBookRow(-5.5, 1.34, -7.95, 0.86, 0.24, 0);
 
-    // 2. Libros en el Aparador Oeste
+    // Balda interior del aparador oeste (nada encima de la superficie)
     this.createBookRow(-11.35, 0.4, -6.0, 0.82, 0.24, Math.PI / 2);
-    this.createBookStack(-11.35, 0.86, -5.75, 4, Math.PI / 2);
-    this.createBookStack(-11.35, 1.45, -6.25, 3, Math.PI / 2);
   }
 
-  // --- NUEVA DECORACIÓN: PAPELERA EN ESQUINA ---
+  // --- PAPELERA EN ESQUINA VISIBLE (SURESTE) ---
   initTrashcan() {
-    // Esquina norte protegida junto a la librería
-    this.place("trashcan", { x: -4.88, y: 0, z: -7.85 }, { height: 0.38 });
+    // Ubicada en la esquina frontal derecha abierta junto a la mampara
+    this.place("trashcan", { x: -5.2, y: 0, z: -3.4 }, { height: 0.42 });
   }
 
-  // --- DETALLES DE AMBIENTACIÓN ADICIONALES ---
   initDeskAndWallDecor() {
-    // Carpeta de cuero ejecutivo en la mesa
     const padMat = new THREE.MeshStandardMaterial({
       color: "#1E1B18",
       roughness: 0.6,
@@ -343,7 +284,6 @@ export class SupervisorOffice {
     sheet.position.set(-8.85, 0.756, -5.55);
     this.group.add(portfolio, sheet);
 
-    // Cubilete con bolígrafos
     const cupMat = new THREE.MeshStandardMaterial({
       color: "#1E293B",
       roughness: 0.3,
@@ -357,7 +297,6 @@ export class SupervisorOffice {
     penCup.castShadow = true;
     this.group.add(penCup);
 
-    // Cuadro esquemático enmarcado en el muro oeste
     const frameMat = new THREE.MeshStandardMaterial({
       color: "#3E2415",
       roughness: 0.5,
@@ -380,24 +319,51 @@ export class SupervisorOffice {
     this.group.add(frame, art);
   }
 
-  // --- SISTEMA CCTV EN TIEMPO REAL ---
-  initCCTVSurveillance() {
-    // Dimensiones de pantalla 16:9 montada sobre la mampara
-    const screenW = 1.36;
-    const screenH = 0.76;
-    const tvPos = { x: -8.4, y: 2.05, z: -2.88 };
+  // --- TV Y PANTALLA CCTV (ENCAPSULADAS CON PRECISIÓN) ---
+  initGlassWallTVAndCCTV() {
+    const tvPos = { x: -8.4, y: 1.85, z: -2.85 };
+    const tv = this.place("tvFlatScreen", tvPos, { height: 0.92 }, Math.PI);
+    if (tv) {
+      tv.traverse((c) => {
+        if (c.isMesh && c.material) {
+          c.material = c.material.clone();
+          c.material.color.set("#12141A");
+          c.material.roughness = 0.35;
+          c.material.metalness = 0.8;
+        }
+      });
+    }
 
-    // RenderTarget de alta fidelidad 16:9
+    // Calcular medidas exactas del chasis del TV colocado
+    const tvBox = new THREE.Box3().setFromObject(tv);
+    const tvSize = new THREE.Vector3();
+    tvBox.getSize(tvSize);
+    const tvCenter = new THREE.Vector3();
+    tvBox.getCenter(tvCenter);
+
+    // Columna de sujeción desde el marco superior del TV hasta la viga de 3.2m
+    const beamY = 3.2;
+    const poleH = Math.max(0.1, beamY - tvBox.max.y);
+    const poleGeo = new THREE.CylinderGeometry(0.022, 0.022, poleH, 16);
+    const poleMat = new THREE.MeshStandardMaterial({
+      color: "#15171E",
+      roughness: 0.35,
+      metalness: 0.85,
+    });
+    const pole = new THREE.Mesh(poleGeo, poleMat);
+    pole.position.set(tvCenter.x, tvBox.max.y + poleH / 2, tvCenter.z);
+    pole.castShadow = true;
+    this.group.add(pole);
+
+    // Configuración CCTV
     this.cctvRenderTarget = new THREE.WebGLRenderTarget(1024, 576, {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       format: THREE.RGBAFormat,
     });
 
-    // Cámara de vigilancia dedicada con FOV de seguridad (48°)
     this.cctvCamera = new THREE.PerspectiveCamera(48, 16 / 9, 0.5, 60);
 
-    // Posiciones estratégicas de las 4 cámaras en la oficina
     this.cctvFeeds = [
       {
         name: "CAM 01 - AREA DE DESARROLLO",
@@ -423,20 +389,24 @@ export class SupervisorOffice {
 
     this.currentCamIndex = 0;
     this.cctvTimer = 0;
-    this.cctvCycleInterval = 5.0; // Rota cada 5 segundos
+    this.cctvCycleInterval = 5.0;
     this.renderThrottleTimer = 0;
 
-    // Pantalla de video en vivo (muestra el render del 3D en tiempo real)
+    // Pantalla de video ajustada exactamente al panel interior del TV
+    const screenW = tvSize.x * 0.91;
+    const screenH = tvSize.y * 0.85;
     const screenGeo = new THREE.PlaneGeometry(screenW, screenH);
+
     const screenMat = new THREE.MeshBasicMaterial({
       map: this.cctvRenderTarget.texture,
     });
     this.screenMesh = new THREE.Mesh(screenGeo, screenMat);
-    this.screenMesh.position.set(tvPos.x, tvPos.y, tvPos.z);
-    this.screenMesh.rotation.y = Math.PI; // De cara al supervisor
+    // Centrada en X e Y del TV, y colocada 6mm por delante de su superficie frontal
+    this.screenMesh.position.set(tvCenter.x, tvCenter.y, tvBox.min.z - 0.006);
+    this.screenMesh.rotation.y = Math.PI;
     this.group.add(this.screenMesh);
 
-    // Capa de interfaz gráfica OSD (Reloj, [REC], Cámara activa)
+    // Interfaz OSD (HUD) superpuesta sobre la pantalla
     this.hudCanvas = document.createElement("canvas");
     this.hudCanvas.width = 1024;
     this.hudCanvas.height = 576;
@@ -450,7 +420,7 @@ export class SupervisorOffice {
     });
 
     this.hudMesh = new THREE.Mesh(screenGeo, hudMat);
-    this.hudMesh.position.set(tvPos.x, tvPos.y, tvPos.z - 0.003); // Apenas frente al video
+    this.hudMesh.position.set(tvCenter.x, tvCenter.y, tvBox.min.z - 0.009);
     this.hudMesh.rotation.y = Math.PI;
     this.group.add(this.hudMesh);
 
@@ -465,36 +435,30 @@ export class SupervisorOffice {
 
     ctx.clearRect(0, 0, w, h);
 
-    // Esquinas de visor de cámara CCTV
     ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
     ctx.lineWidth = 3;
     const bLen = 32;
-    // Sup-Izq
     ctx.beginPath();
     ctx.moveTo(40, 40 + bLen);
     ctx.lineTo(40, 40);
     ctx.lineTo(40 + bLen, 40);
     ctx.stroke();
-    // Sup-Der
     ctx.beginPath();
     ctx.moveTo(w - 40 - bLen, 40);
     ctx.lineTo(w - 40, 40);
     ctx.lineTo(w - 40, 40 + bLen);
     ctx.stroke();
-    // Inf-Izq
     ctx.beginPath();
     ctx.moveTo(40, h - 40 - bLen);
     ctx.lineTo(40, h - 40);
     ctx.lineTo(40 + bLen, h - 40);
     ctx.stroke();
-    // Inf-Der
     ctx.beginPath();
     ctx.moveTo(w - 40 - bLen, h - 40);
     ctx.lineTo(w - 40, h - 40);
     ctx.lineTo(w - 40, h - 40 - bLen);
     ctx.stroke();
 
-    // Indicador REC parpadeante
     const isBlink = Math.floor(Date.now() / 600) % 2 === 0;
     if (isBlink) {
       ctx.fillStyle = "#EF4444";
@@ -506,14 +470,12 @@ export class SupervisorOffice {
     ctx.font = "bold 22px monospace";
     ctx.fillText("REC", 78, 76);
 
-    // Nombre de la cámara activa
     ctx.fillStyle = "rgba(15, 23, 42, 0.65)";
     ctx.fillRect(140, 52, 400, 34);
     ctx.fillStyle = "#38BDF8";
     ctx.font = "bold 20px monospace";
     ctx.fillText(feed.name, 155, 76);
 
-    // Reloj digital en vivo
     const now = new Date();
     const timeStr = now.toLocaleTimeString("es-ES", { hour12: false });
     const dateStr = now.toISOString().slice(0, 10);
@@ -521,7 +483,6 @@ export class SupervisorOffice {
     ctx.font = "bold 22px monospace";
     ctx.fillText(`${dateStr}  ${timeStr}`, w - 340, 76);
 
-    // Pie de estado
     ctx.fillStyle = "rgba(15, 23, 42, 0.65)";
     ctx.fillRect(40, h - 72, 360, 32);
     ctx.fillStyle = "#10B981";
@@ -538,21 +499,18 @@ export class SupervisorOffice {
   update(delta) {
     if (!this.cctvRenderTarget) return;
 
-    // Ciclo de rotación de cámaras
     this.cctvTimer += delta;
     if (this.cctvTimer >= this.cctvCycleInterval) {
       this.cctvTimer = 0;
       this.currentCamIndex = (this.currentCamIndex + 1) % this.cctvFeeds.length;
     }
 
-    // Actualizar reloj y parpadeo cada 0.3s
     this.hudClockTimer = (this.hudClockTimer || 0) + delta;
     if (this.hudClockTimer >= 0.3) {
       this.hudClockTimer = 0;
       this.updateHUD();
     }
 
-    // Renderizar la toma de seguridad a 30 FPS auténticos
     this.renderThrottleTimer += delta;
     if (this.renderThrottleTimer >= 0.033) {
       this.renderThrottleTimer = 0;
@@ -570,7 +528,6 @@ export class SupervisorOffice {
     this.cctvCamera.position.copy(feed.pos);
     this.cctvCamera.lookAt(feed.target);
 
-    // Ocultar temporalmente los planos del televisor para evitar autorrenderizado
     this.screenMesh.visible = false;
     this.hudMesh.visible = false;
 
@@ -582,4 +539,11 @@ export class SupervisorOffice {
     this.screenMesh.visible = true;
     this.hudMesh.visible = true;
   }
+}
+
+function childMatClone(mat, colorHex, roughness) {
+  const m = mat.clone();
+  m.color.set(colorHex);
+  m.roughness = roughness;
+  return m;
 }
