@@ -16,27 +16,22 @@ export class PingPongArea {
     this.group = new THREE.Group();
     this.group.name = "zone-ping-pong";
 
-    // 1. Mesa de Ping-Pong reglamentaria 100% RECTA
-    this.initStraightPingPongTable();
-    this.initRefereeScoreboard();
+    // 1. Mesa de Ping-Pong reglamentaria (Eje longitudinal Norte-Sur)
+    this.initRotatedPingPongTable();
 
-    // 2. Zona de Juegos y Recreación: Futbolín y Arcade Retro
-    this.initFoosballTable();
-    this.initArcadeMachine();
+    // 2. Pizarra de torneo fijada al cristal (sin jardineras duplicadas)
+    this.initGlassMountedWhiteboard();
 
-    // 3. Estación Vending Doble y Taquillas (Muro Sur Z = 0)
-    this.initVendingAndLockers();
+    // 3. Arcade GLB (rotado 180° hacia la sala), Doble Vending y Taquillas
+    this.initSouthArcadeAndVending();
 
-    // 4. Muro Norte: Vitrina de Trofeos, Banco y Neón "GAME ON"
-    this.initTrophyCaseAndNorthWall();
+    // 4. Muro Norte: Vitrina de Trofeos, Banco y Cuadros deportivos
+    this.initNorthWallSportsDecor();
 
-    // 5. Lounge VIP de Espectadores (Esquina Este ampliada)
+    // 5. Lounge VIP de Espectadores (Mesa de café rotada 90°)
     this.initSpectatorLounge();
 
-    // 6. Pizarra de Torneo en mampara oeste
-    this.initTournamentWhiteboard();
-
-    // 7. Vegetación de gran porte
+    // 6. Vegetación perimetral
     this.initVegetation();
 
     this.scene.add(this.group);
@@ -62,26 +57,25 @@ export class PingPongArea {
     return fitted;
   }
 
-  // --- 1. MESA DE PING PONG OFICIAL ITTF 100% RECTA (X: 7.60, Z: -4.50) ---
-  initStraightPingPongTable() {
+  // --- 1. MESA DE PING PONG OFICIAL (X: 7.50, Z: -4.50) ---
+  initRotatedPingPongTable() {
     const tableGroup = new THREE.Group();
-    const tX = 7.6;
+    const tX = 7.5;
     const tZ = -4.5;
     const tH = 0.76;
-    const tL = 2.74; // Eje X: largo estrictamente horizontal
-    const tW = 1.525; // Eje Z: ancho estrictamente perpendicular
+    const tL = 2.74; // Eje Z (Norte-Sur)
+    const tW = 1.525; // Eje X (Este-Oeste)
     const topThickness = 0.035;
 
     tableGroup.position.set(tX, 0, tZ);
 
-    // Tablero azul torneo mate
     const topMat = new THREE.MeshStandardMaterial({
       color: "#1D4ED8",
       roughness: 0.36,
       metalness: 0.04,
     });
     const tableTop = new THREE.Mesh(
-      new THREE.BoxGeometry(tL, topThickness, tW),
+      new THREE.BoxGeometry(tW, topThickness, tL),
       topMat,
     );
     tableTop.position.y = tH - topThickness / 2;
@@ -89,35 +83,35 @@ export class PingPongArea {
     tableTop.receiveShadow = true;
     tableGroup.add(tableTop);
 
-    // Líneas blancas oficiales (sin desfases)
+    // Líneas blancas reglamentarias
     const lineMat = new THREE.MeshBasicMaterial({ color: "#FFFFFF" });
 
-    const borderN = new THREE.Mesh(new THREE.PlaneGeometry(tL, 0.02), lineMat);
-    borderN.rotation.x = -Math.PI / 2;
-    borderN.position.set(0, tH + 0.001, -tW / 2 + 0.01);
-
-    const borderS = new THREE.Mesh(new THREE.PlaneGeometry(tL, 0.02), lineMat);
-    borderS.rotation.x = -Math.PI / 2;
-    borderS.position.set(0, tH + 0.001, tW / 2 - 0.01);
-
-    const borderW = new THREE.Mesh(new THREE.PlaneGeometry(0.02, tW), lineMat);
+    const borderW = new THREE.Mesh(new THREE.PlaneGeometry(0.02, tL), lineMat);
     borderW.rotation.x = -Math.PI / 2;
-    borderW.position.set(-tL / 2 + 0.01, tH + 0.001, 0);
+    borderW.position.set(-tW / 2 + 0.01, tH + 0.001, 0);
 
-    const borderE = new THREE.Mesh(new THREE.PlaneGeometry(0.02, tW), lineMat);
+    const borderE = new THREE.Mesh(new THREE.PlaneGeometry(0.02, tL), lineMat);
     borderE.rotation.x = -Math.PI / 2;
-    borderE.position.set(tL / 2 - 0.01, tH + 0.001, 0);
+    borderE.position.set(tW / 2 - 0.01, tH + 0.001, 0);
+
+    const borderN = new THREE.Mesh(new THREE.PlaneGeometry(tW, 0.02), lineMat);
+    borderN.rotation.x = -Math.PI / 2;
+    borderN.position.set(0, tH + 0.001, -tL / 2 + 0.01);
+
+    const borderS = new THREE.Mesh(new THREE.PlaneGeometry(tW, 0.02), lineMat);
+    borderS.rotation.x = -Math.PI / 2;
+    borderS.position.set(0, tH + 0.001, tL / 2 - 0.01);
 
     const centerLine = new THREE.Mesh(
-      new THREE.PlaneGeometry(tL, 0.006),
+      new THREE.PlaneGeometry(0.006, tL),
       lineMat,
     );
     centerLine.rotation.x = -Math.PI / 2;
     centerLine.position.set(0, tH + 0.001, 0);
 
-    tableGroup.add(borderN, borderS, borderW, borderE, centerLine);
+    tableGroup.add(borderW, borderE, borderN, borderS, centerLine);
 
-    // Red de malla vertical a lo largo del eje Z
+    // Red reglamentaria central tendida a lo largo de X
     const netH = 0.1525;
     const netSpan = tW + 0.16;
     const netMat = new THREE.MeshStandardMaterial({
@@ -131,7 +125,6 @@ export class PingPongArea {
       new THREE.PlaneGeometry(netSpan, netH),
       netMat,
     );
-    netMesh.rotation.y = Math.PI / 2;
     netMesh.position.set(0, tH + netH / 2, 0);
     netMesh.castShadow = true;
 
@@ -140,32 +133,32 @@ export class PingPongArea {
       roughness: 0.3,
       metalness: 0.85,
     });
-    [-netSpan / 2, netSpan / 2].forEach((pz) => {
+    [-netSpan / 2, netSpan / 2].forEach((px) => {
       const post = new THREE.Mesh(
         new THREE.CylinderGeometry(0.012, 0.012, netH + 0.03, 12),
         postMat,
       );
-      post.position.set(0, tH + netH / 2, pz);
+      post.position.set(px, tH + netH / 2, 0);
       post.castShadow = true;
       tableGroup.add(post);
     });
     tableGroup.add(netMesh);
 
-    // Estructura tubular inferior de acero blanco con ruedas y tirantes
+    // Estructura tubular inferior de acero
     const frameMat = new THREE.MeshStandardMaterial({
       color: "#E2E8F0",
       roughness: 0.35,
       metalness: 0.8,
     });
     const legPositions = [
-      { x: -tL * 0.4, z: -tW * 0.42 },
-      { x: -tL * 0.4, z: tW * 0.42 },
-      { x: -tL * 0.12, z: -tW * 0.42 },
-      { x: -tL * 0.12, z: tW * 0.42 },
-      { x: tL * 0.12, z: -tW * 0.42 },
-      { x: tL * 0.12, z: tW * 0.42 },
-      { x: tL * 0.4, z: -tW * 0.42 },
-      { x: tL * 0.4, z: tW * 0.42 },
+      { x: -tW * 0.42, z: -tL * 0.4 },
+      { x: tW * 0.42, z: -tL * 0.4 },
+      { x: -tW * 0.42, z: -tL * 0.12 },
+      { x: tW * 0.42, z: -tL * 0.12 },
+      { x: -tW * 0.42, z: tL * 0.12 },
+      { x: tW * 0.42, z: tL * 0.12 },
+      { x: -tW * 0.42, z: tL * 0.4 },
+      { x: tW * 0.42, z: tL * 0.4 },
     ];
 
     legPositions.forEach((lp) => {
@@ -180,356 +173,210 @@ export class PingPongArea {
         new THREE.CylinderGeometry(0.025, 0.025, 0.02, 12),
         postMat,
       );
-      wheel.rotation.z = Math.PI / 2;
       wheel.position.set(lp.x, 0.025, lp.z);
       wheel.castShadow = true;
 
       tableGroup.add(leg, wheel);
     });
 
-    // Travesaños longitudinales
-    const barN = new THREE.Mesh(
-      new THREE.BoxGeometry(tL * 0.84, 0.03, 0.03),
+    const barW_leg = new THREE.Mesh(
+      new THREE.BoxGeometry(0.03, 0.03, tL * 0.84),
       frameMat,
     );
-    barN.position.set(0, 0.22, -tW * 0.42);
-    const barS = new THREE.Mesh(
-      new THREE.BoxGeometry(tL * 0.84, 0.03, 0.03),
+    barW_leg.position.set(-tW * 0.42, 0.22, 0);
+    const barE_leg = new THREE.Mesh(
+      new THREE.BoxGeometry(0.03, 0.03, tL * 0.84),
       frameMat,
     );
-    barS.position.set(0, 0.22, tW * 0.42);
-    tableGroup.add(barN, barS);
+    barE_leg.position.set(tW * 0.42, 0.22, 0);
+    tableGroup.add(barW_leg, barE_leg);
 
     this.group.add(tableGroup);
 
-    // Palas y pelotas apoyadas en la mesa recta
+    // Palas y pelotas apoyadas en la mesa
     this.createPaddleProcedural(
-      tX - 0.85,
+      tX - 0.35,
       tH + 0.005,
-      tZ - 0.35,
-      0.35,
+      tZ - 0.85,
+      0.2,
       "#DC2626",
     );
     this.createPaddleProcedural(
-      tX - 0.7,
+      tX + 0.35,
       tH + 0.005,
-      tZ + 0.4,
-      -0.2,
+      tZ - 0.65,
+      -0.35,
       "#1E293B",
     );
     this.createPaddleProcedural(
-      tX + 0.85,
+      tX + 0.25,
       tH + 0.005,
-      tZ + 0.25,
-      -0.45,
+      tZ + 0.85,
+      0.45,
       "#DC2626",
     );
     this.createPaddleProcedural(
-      tX + 0.7,
+      tX - 0.3,
       tH + 0.005,
-      tZ - 0.4,
-      0.15,
+      tZ + 0.7,
+      -0.15,
       "#1E293B",
     );
 
-    this.createBallProcedural(tX - 0.55, tH + 0.015, tZ - 0.2);
-    this.createBallProcedural(tX + 0.6, tH + 0.015, tZ + 0.1);
-    this.createBallProcedural(tX + 0.65, tH + 0.015, tZ + 0.16);
+    this.createBallProcedural(tX - 0.18, tH + 0.015, tZ - 0.5);
+    this.createBallProcedural(tX + 0.15, tH + 0.015, tZ + 0.55);
+    this.createBallProcedural(tX + 0.22, tH + 0.015, tZ + 0.6);
   }
 
-  // --- MARCADOR DE TANTEO DE ÁRBITRO ---
-  initRefereeScoreboard() {
-    const stand = new THREE.Group();
-    stand.position.set(7.6, 0, -6.15);
+  // --- 2. PIZARRA ADOSADA AL CRISTAL (X = 4.24) ---
+  initGlassMountedWhiteboard() {
+    const boardGroup = new THREE.Group();
+    boardGroup.position.set(4.24, 0.0, -4.5);
+    boardGroup.rotation.y = Math.PI / 2;
 
-    const metalMat = new THREE.MeshStandardMaterial({
-      color: "#1E293B",
-      roughness: 0.3,
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: "#E2E8F0",
       metalness: 0.85,
-    });
-    const pole = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.018, 0.018, 0.95, 12),
-      metalMat,
-    );
-    pole.position.y = 0.475;
-    pole.castShadow = true;
-
-    const base = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.2, 0.2, 0.02, 24),
-      metalMat,
-    );
-    base.position.y = 0.01;
-    base.castShadow = true;
-
-    // Marcador de tanteo de mesa giratorio («11 - 9»)
-    const boardMat = new THREE.MeshStandardMaterial({
-      color: "#0F172A",
-      roughness: 0.4,
-    });
-    const board = new THREE.Mesh(
-      new THREE.BoxGeometry(0.42, 0.24, 0.06),
-      boardMat,
-    );
-    board.position.y = 1.02;
-    board.castShadow = true;
-
-    // Tarjetas roja (11) y azul (9)
-    const cardRed = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.16, 0.18),
-      new THREE.MeshBasicMaterial({ color: "#EF4444" }),
-    );
-    cardRed.position.set(-0.09, 1.02, 0.032);
-
-    const cardBlue = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.16, 0.18),
-      new THREE.MeshBasicMaterial({ color: "#3B82F6" }),
-    );
-    cardBlue.position.set(0.09, 1.02, 0.032);
-
-    stand.add(pole, base, board, cardRed, cardBlue);
-    this.group.add(stand);
-  }
-
-  // --- 2. FUTBOLÍN PROFESIONAL (X: 5.20, Z: -1.80) ---
-  initFoosballTable() {
-    const fGroup = new THREE.Group();
-    const fX = 5.2,
-      fZ = -1.8,
-      fH = 0.88,
-      fL = 1.4,
-      fW = 0.75;
-    fGroup.position.set(fX, 0, fZ);
-
-    // Cajón de madera en nogal
-    const woodMat = new THREE.MeshStandardMaterial({
-      color: "#452210",
-      roughness: 0.45,
-    });
-    const cabinet = new THREE.Mesh(
-      new THREE.BoxGeometry(fL, 0.32, fW),
-      woodMat,
-    );
-    cabinet.position.y = fH - 0.16;
-    cabinet.castShadow = true;
-    fGroup.add(cabinet);
-
-    // Campo de juego verde césped con líneas blancas
-    const fieldMat = new THREE.MeshStandardMaterial({
-      color: "#15803D",
-      roughness: 0.7,
-    });
-    const field = new THREE.Mesh(
-      new THREE.PlaneGeometry(fL - 0.12, fW - 0.1),
-      fieldMat,
-    );
-    field.rotation.x = -Math.PI / 2;
-    field.position.y = fH - 0.05;
-    field.receiveShadow = true;
-    fGroup.add(field);
-
-    // 8 barras de acero cromado transversales
-    const chromeMat = new THREE.MeshStandardMaterial({
-      color: "#F1F5F9",
-      metalness: 0.95,
-      roughness: 0.15,
-    });
-    const redMat = new THREE.MeshStandardMaterial({
-      color: "#DC2626",
-      roughness: 0.5,
-    });
-    const blueMat = new THREE.MeshStandardMaterial({
-      color: "#2563EB",
-      roughness: 0.5,
-    });
-
-    for (let i = 0; i < 8; i++) {
-      const rx = -fL / 2 + 0.15 + i * 0.155;
-      const rod = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.008, 0.008, fW + 0.36, 12),
-        chromeMat,
-      );
-      rod.rotation.x = Math.PI / 2;
-      rod.position.set(rx, fH + 0.02, 0);
-      rod.castShadow = true;
-      fGroup.add(rod);
-
-      // Muñecos en la barra
-      const isRedTeam = i % 2 === 0;
-      const teamMat = isRedTeam ? redMat : blueMat;
-      const playersCount = i === 0 || i === 7 ? 1 : i === 1 || i === 6 ? 2 : 3;
-      for (let p = 0; p < playersCount; p++) {
-        const pz = (p - (playersCount - 1) / 2) * 0.18;
-        const player = new THREE.Mesh(
-          new THREE.BoxGeometry(0.025, 0.065, 0.02),
-          teamMat,
-        );
-        player.position.set(rx, fH - 0.01, pz);
-        player.castShadow = true;
-        fGroup.add(player);
-      }
-    }
-
-    // 4 patas robustas de acero negro
-    const legMat = new THREE.MeshStandardMaterial({
-      color: "#111827",
-      roughness: 0.4,
-      metalness: 0.85,
-    });
-    [-fL / 2 + 0.08, fL / 2 - 0.08].forEach((lx) => {
-      [-fW / 2 + 0.08, fW / 2 - 0.08].forEach((lz) => {
-        const leg = new THREE.Mesh(
-          new THREE.BoxGeometry(0.07, fH - 0.32, 0.07),
-          legMat,
-        );
-        leg.position.set(lx, (fH - 0.32) / 2, lz);
-        leg.castShadow = true;
-        fGroup.add(leg);
-      });
-    });
-
-    this.group.add(fGroup);
-  }
-
-  // --- MÁQUINA ARCADE RETRO (X: 6.50, Z: -0.15) ---
-  initArcadeMachine() {
-    const arcGroup = new THREE.Group();
-    arcGroup.position.set(6.5, 0, -0.15);
-
-    const w = 0.72,
-      h = 1.78,
-      d = 0.75;
-    const bodyMat = new THREE.MeshStandardMaterial({
-      color: "#0F172A",
-      roughness: 0.35,
-      metalness: 0.6,
-    });
-    const mainBody = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat);
-    mainBody.position.y = h / 2;
-    mainBody.castShadow = true;
-    arcGroup.add(mainBody);
-
-    // Marquesina superior iluminada "ARCADE RETRO"
-    const marqueeMat = new THREE.MeshStandardMaterial({
-      color: "#38BDF8",
-      emissive: "#0284C7",
-      emissiveIntensity: 0.65,
       roughness: 0.2,
     });
-    const marquee = new THREE.Mesh(
-      new THREE.BoxGeometry(w - 0.04, 0.18, 0.04),
-      marqueeMat,
+    const frame = new THREE.Mesh(
+      new THREE.BoxGeometry(1.6, 1.1, 0.03),
+      frameMat,
     );
-    marquee.position.set(0, h - 0.12, -d / 2 - 0.015);
-    arcGroup.add(marquee);
+    frame.position.y = 1.35;
+    frame.castShadow = true;
 
-    // Pantalla CRT inclinada con gráficos retro pixel art
-    const screenMat = new THREE.MeshStandardMaterial({
-      color: "#10B981",
-      emissive: "#047857",
-      emissiveIntensity: 0.45,
-      roughness: 0.1,
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 340;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, 512, 340);
+
+    ctx.fillStyle = "#0F172A";
+    ctx.font = "bold 22px Arial";
+    ctx.fillText("🏆 TORNEO PING-PONG", 130, 44);
+
+    ctx.strokeStyle = "#2563EB";
+    ctx.lineWidth = 3;
+    [80, 140, 200, 260].forEach((ly) => {
+      ctx.beginPath();
+      ctx.moveTo(50, ly);
+      ctx.lineTo(150, ly);
+      ctx.stroke();
     });
-    const screen = new THREE.Mesh(
-      new THREE.PlaneGeometry(w - 0.12, 0.42),
-      screenMat,
-    );
-    screen.position.set(0, h * 0.64, -d / 2 - 0.02);
-    screen.rotation.x = -0.22;
-    arcGroup.add(screen);
-
-    // Panel de mandos con joysticks y botones de colores
-    const ctrlMat = new THREE.MeshStandardMaterial({
-      color: "#1E293B",
-      roughness: 0.5,
+    [110, 230].forEach((my, idx) => {
+      ctx.beginPath();
+      ctx.moveTo(150, 80 + idx * 120);
+      ctx.lineTo(150, 140 + idx * 120);
+      ctx.lineTo(260, my);
+      ctx.stroke();
     });
-    const ctrlPanel = new THREE.Mesh(
-      new THREE.BoxGeometry(w - 0.04, 0.05, 0.28),
-      ctrlMat,
+    ctx.beginPath();
+    ctx.moveTo(260, 110);
+    ctx.lineTo(260, 230);
+    ctx.lineTo(370, 170);
+    ctx.lineTo(440, 170);
+    ctx.stroke();
+
+    ctx.fillStyle = "#DC2626";
+    ctx.font = "bold 18px Arial";
+    ctx.fillText("FINAL", 380, 160);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    const boardSurface = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.52, 1.02),
+      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.35 }),
     );
-    ctrlPanel.position.set(0, h * 0.48, -d / 2 - 0.08);
-    ctrlPanel.rotation.x = 0.18;
-    arcGroup.add(ctrlPanel);
+    boardSurface.position.set(0, 1.35, 0.018);
 
-    // 2 joysticks rojos con bola superior
-    [-0.18, 0.18].forEach((jx) => {
-      const stick = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.006, 0.006, 0.07, 8),
-        new THREE.MeshStandardMaterial({ color: "#CBD5E1", metalness: 0.9 }),
-      );
-      stick.position.set(jx, h * 0.52, -d / 2 - 0.08);
-      const ball = new THREE.Mesh(
-        new THREE.SphereGeometry(0.02, 12, 12),
-        new THREE.MeshStandardMaterial({ color: "#EF4444" }),
-      );
-      ball.position.set(jx, h * 0.56, -d / 2 - 0.08);
-      arcGroup.add(stick, ball);
-    });
-
-    // Puerta de monedas con botones de rechazo
-    const coinDoor = new THREE.Mesh(
-      new THREE.BoxGeometry(0.32, 0.38, 0.02),
-      new THREE.MeshStandardMaterial({
-        color: "#020617",
-        roughness: 0.4,
-        metalness: 0.8,
-      }),
+    const tray = new THREE.Mesh(
+      new THREE.BoxGeometry(1.4, 0.02, 0.06),
+      frameMat,
     );
-    coinDoor.position.set(0, 0.26, -d / 2 - 0.01);
-    arcGroup.add(coinDoor);
+    tray.position.set(0, 0.79, 0.03);
 
-    this.group.add(arcGroup);
+    boardGroup.add(frame, boardSurface, tray);
+    this.group.add(boardGroup);
   }
 
-  // --- 3. DOBLE VENDING MACHINE Y TAQUILLAS (MURO SUR) ---
-  initVendingAndLockers() {
-    const wallZ = -0.15;
+  // --- 3. ARCADE GLB ROTADO 180° Y DOBLE VENDING (MURO SUR Z = -0.18) ---
+  initSouthArcadeAndVending() {
+    const wallZ = -0.18;
 
-    // Máquina de Snacks (X = 9.40)
+    // Arcade rotado 180° (rotY = 0) para que la pantalla y los controles miren al frente hacia la sala
+    const arcade =
+      this.place(
+        "arcadeMachine",
+        { x: 6.2, y: 0.0, z: wallZ },
+        { height: 1.78 },
+        0,
+      ) ||
+      this.place(
+        "arcade-machine",
+        { x: 6.2, y: 0.0, z: wallZ },
+        { height: 1.78 },
+        0,
+      );
+
+    if (!arcade) {
+      this.createProceduralArcade(6.2, 0.0, wallZ);
+    }
+
+    // Mueble de casilleros técnicos / Taquillas
+    const cabinet = this.place(
+      "cubeCabinet",
+      { x: 7.7, y: 0.0, z: wallZ },
+      { height: 0.95, width: 1.25 },
+      Math.PI,
+    );
+    if (!cabinet) {
+      this.createProceduralCubeCabinet(7.7, 0.0, wallZ);
+    }
+
+    // Máquinas expendedoras rotadas hacia la sala
     const snackVM = this.place(
       "vendingMachine",
-      { x: 9.4, y: 0.0, z: wallZ },
+      { x: 9.2, y: 0.0, z: wallZ },
       { height: 1.85 },
-      0,
+      Math.PI,
     );
-    if (!snackVM)
-      this.createProceduralVendingMachine(9.4, 0.0, wallZ, "snacks");
+    if (!snackVM) {
+      this.createProceduralVendingMachine(9.2, 0.0, wallZ, "snacks");
+    }
 
-    // Máquina de Bebidas (X = 10.60)
     const drinkVM = this.place(
       "vendingMachine",
-      { x: 10.6, y: 0.0, z: wallZ },
+      { x: 10.45, y: 0.0, z: wallZ },
       { height: 1.85 },
-      0,
+      Math.PI,
     );
-    if (!drinkVM)
-      this.createProceduralVendingMachine(10.6, 0.0, wallZ, "drinks");
+    if (!drinkVM) {
+      this.createProceduralVendingMachine(10.45, 0.0, wallZ, "drinks");
+    }
 
-    // Papelera de reciclaje doble (X = 11.45)
-    this.place("trashcan", { x: 11.45, y: 0.0, z: wallZ }, { height: 0.42 }, 0);
+    // Papelera metálica de reciclaje
+    this.place(
+      "trashcan",
+      { x: 11.45, y: 0.0, z: wallZ },
+      { height: 0.42 },
+      Math.PI,
+    );
 
-    // Latas en el suelo / zona de descanso
-    this.place("sodaCan", { x: 9.95, y: 0.0, z: -0.45 }, { maxDim: 0.11 });
+    // Latas de refresco
+    this.place("sodaCan", { x: 9.75, y: 0.0, z: -0.45 }, { maxDim: 0.11 });
     this.place(
       "sodaCanCrushed",
       { x: 11.35, y: 0.0, z: -0.55 },
       { maxDim: 0.1 },
     );
-
-    // Taquillero deportivo / Cube Cabinet (X = 7.90)
-    const cabinet = this.place(
-      "cubeCabinet",
-      { x: 7.9, y: 0.0, z: wallZ },
-      { height: 0.95, width: 1.3 },
-      0,
-    );
-    if (!cabinet) this.createProceduralCubeCabinet(7.9, 0.0, wallZ);
   }
 
-  // --- 4. MURO NORTE: VITRINA DE TROFEOS, BANCO Y NEÓN (Z = -8.45) ---
-  initTrophyCaseAndNorthWall() {
+  // --- 4. MURO NORTE DEPORTIVO (Z = -8.45) ---
+  initNorthWallSportsDecor() {
     const wallZ = -8.45;
 
-    // 1. Vitrina de Trofeos acristalada (X = 6.20)
+    // Vitrina de Trofeos acristalada
     const trophyCase = new THREE.Group();
     trophyCase.position.set(6.2, 0, wallZ + 0.22);
 
@@ -569,8 +416,6 @@ export class PingPongArea {
     );
     glassDoor.position.set(0, 0.9, 0.21);
     trophyCase.add(glassDoor);
-
-    // Trofeos en las 3 baldas
     [0.45, 0.95, 1.4].forEach((shelfY, sIdx) => {
       [-0.32, 0, 0.32].forEach((tx, tIdx) => {
         const mat = (sIdx + tIdx) % 2 === 0 ? goldMat : silverMat;
@@ -594,9 +439,9 @@ export class PingPongArea {
     });
     this.group.add(trophyCase);
 
-    // 2. Banco corrido de calentamiento (X = 8.00)
+    // Banco de descanso corrido en nogal
     const benchGroup = new THREE.Group();
-    benchGroup.position.set(8.0, 0, wallZ + 0.25);
+    benchGroup.position.set(8.1, 0, wallZ + 0.25);
     const bTop = new THREE.Mesh(
       new THREE.BoxGeometry(1.6, 0.04, 0.42),
       caseMat,
@@ -621,21 +466,17 @@ export class PingPongArea {
     });
     this.group.add(benchGroup);
 
-    // Raquetero / Bolsa de deporte en el suelo
-    const bagMat = new THREE.MeshStandardMaterial({
-      color: "#0284C7",
-      roughness: 0.65,
-    });
+    // Bolsa deportiva en el suelo
     const gymBag = new THREE.Mesh(
       new THREE.CylinderGeometry(0.14, 0.14, 0.55, 16),
-      bagMat,
+      new THREE.MeshStandardMaterial({ color: "#0284C7", roughness: 0.65 }),
     );
     gymBag.rotation.z = Math.PI / 2;
-    gymBag.position.set(8.0, 0.14, wallZ + 0.65);
+    gymBag.position.set(8.1, 0.14, wallZ + 0.65);
     gymBag.castShadow = true;
     this.group.add(gymBag);
 
-    // 3. Cartel Neón Deportivo "GAME ON"
+    // Cartel luminoso "GAME ON"
     const neonMat = new THREE.MeshStandardMaterial({
       color: "#06B6D4",
       emissive: "#0891B2",
@@ -655,41 +496,36 @@ export class PingPongArea {
     neonSign.position.set(7.6, 2.75, wallZ + 0.035);
     this.group.add(neonBox, neonSign);
 
-    // Perchero y Tabla decorativa en la pared
-    const boardMat = new THREE.MeshStandardMaterial({
-      color: "#06B6D4",
-      roughness: 0.25,
-      metalness: 0.15,
-    });
+    // Tabla decorativa y póster mural
     const board = new THREE.Mesh(
       new THREE.CylinderGeometry(0.18, 0.18, 0.95, 24),
-      boardMat,
+      new THREE.MeshStandardMaterial({
+        color: "#06B6D4",
+        roughness: 0.25,
+        metalness: 0.15,
+      }),
     );
     board.scale.set(1.0, 1.0, 0.12);
     board.position.set(9.4, 2.05, wallZ + 0.02);
     board.castShadow = true;
     this.group.add(board);
 
-    const posterMat = new THREE.MeshStandardMaterial({
-      color: "#F97316",
-      roughness: 0.4,
-    });
     const poster = new THREE.Mesh(
       new THREE.PlaneGeometry(0.85, 1.1),
-      posterMat,
+      new THREE.MeshStandardMaterial({ color: "#F97316", roughness: 0.4 }),
     );
     poster.position.set(10.6, 2.05, wallZ + 0.02);
     this.group.add(poster);
   }
 
-  // --- 5. LOUNGE VIP DE ESPECTADORES (ESQUINA ESTE AMPLIADA) ---
+  // --- 5. LOUNGE VIP DE ESPECTADORES (MESA DE CENTRO ROTADA 90°) ---
   initSpectatorLounge() {
     const rugX = 10.6;
     const rugZ = -4.5;
     const rugW = 2.6;
     const rugL = 4.4;
 
-    // Gran alfombra roja rubí texturizada
+    // Alfombra roja texturizada
     const canvas = document.createElement("canvas");
     canvas.width = 256;
     canvas.height = 256;
@@ -708,18 +544,20 @@ export class PingPongArea {
     tex.wrapT = THREE.RepeatWrapping;
     tex.repeat.set(3, 4);
 
-    const rugMat = new THREE.MeshStandardMaterial({
-      color: "#FFFFFF",
-      map: tex,
-      roughness: 0.85,
-    });
-    const rugMesh = new THREE.Mesh(new THREE.PlaneGeometry(rugW, rugL), rugMat);
+    const rugMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(rugW, rugL),
+      new THREE.MeshStandardMaterial({
+        color: "#FFFFFF",
+        map: tex,
+        roughness: 0.85,
+      }),
+    );
     rugMesh.rotation.x = -Math.PI / 2;
     rugMesh.position.set(rugX, 0.012, rugZ);
     rugMesh.receiveShadow = true;
     this.group.add(rugMesh);
 
-    // Sofá de 3 plazas principal mirando al Oeste hacia la mesa
+    // Sofá de 3 plazas mirando al Oeste hacia la mesa
     const couch =
       this.place(
         "couchMedium",
@@ -735,7 +573,7 @@ export class PingPongArea {
       );
     if (!couch) this.createProceduralSofa(11.35, -4.5, -Math.PI / 2, 1.85);
 
-    // Butaca individual Norte (mirando al Sur)
+    // Butaca individual Norte
     const armN =
       this.place(
         "couchSmall",
@@ -751,7 +589,7 @@ export class PingPongArea {
       );
     if (!armN) this.createProceduralSofa(10.6, -6.1, 0, 0.88);
 
-    // Butaca individual Sur (mirando al Norte)
+    // Butaca individual Sur
     const armS =
       this.place(
         "couchSmall",
@@ -767,42 +605,72 @@ export class PingPongArea {
       );
     if (!armS) this.createProceduralSofa(10.6, -2.9, Math.PI, 0.88);
 
-    // 2 Puffs contemporáneos estilo Bean Bag en el borde de la alfombra
-    this.createBeanBagPuff(9.5, -5.2, "#1E3A8A"); // Azul cobalto
-    this.createBeanBagPuff(9.5, -3.8, "#D97706"); // Ámbar tostado
+    // Puffs Bean Bag contemporáneos
+    this.createBeanBagPuff(9.5, -5.2, "#1E3A8A");
+    this.createBeanBagPuff(9.5, -3.8, "#D97706");
 
-    // Mesa de centro de café con bebidas y revistas
-    const ctTop = new THREE.Mesh(
-      new THREE.BoxGeometry(0.95, 0.035, 0.55),
-      new THREE.MeshStandardMaterial({ color: "#2B170B", roughness: 0.45 }),
+    // Mesa de centro de café rotada 90° con sus bebidas agrupadas
+    const coffeeTableGroup = new THREE.Group();
+    coffeeTableGroup.position.set(10.5, 0.0, -4.5);
+    coffeeTableGroup.rotation.y = Math.PI / 2;
+
+    const glbCoffeeTable =
+      this.place("tableCoffee", { x: 0, y: 0, z: 0 }, { width: 0.95 }, 0) ||
+      this.place("table-coffee", { x: 0, y: 0, z: 0 }, { width: 0.95 }, 0);
+
+    if (glbCoffeeTable) {
+      coffeeTableGroup.add(glbCoffeeTable);
+    } else {
+      const ctTop = new THREE.Mesh(
+        new THREE.BoxGeometry(0.95, 0.035, 0.55),
+        new THREE.MeshStandardMaterial({ color: "#2B170B", roughness: 0.45 }),
+      );
+      ctTop.position.y = 0.36;
+      ctTop.castShadow = true;
+
+      const legMat = new THREE.MeshStandardMaterial({
+        color: "#15171F",
+        roughness: 0.3,
+        metalness: 0.85,
+      });
+      [-0.42, 0.42].forEach((lx) => {
+        [-0.22, 0.22].forEach((lz) => {
+          const leg = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.015, 0.015, 0.34, 12),
+            legMat,
+          );
+          leg.position.set(lx, 0.17, lz);
+          leg.castShadow = true;
+          coffeeTableGroup.add(leg);
+        });
+      });
+      coffeeTableGroup.add(ctTop);
+    }
+
+    // Bebidas sobre la mesa de café rotada
+    const glass = this.place(
+      "waterGlass",
+      { x: -0.15, y: 0.38, z: 0.06 },
+      { maxDim: 0.09 },
     );
-    ctTop.position.set(10.5, 0.36, -4.5);
-    ctTop.castShadow = true;
+    const can = this.place(
+      "sodaCan",
+      { x: 0.16, y: 0.38, z: -0.06 },
+      { maxDim: 0.1 },
+    );
+    if (glass) coffeeTableGroup.add(glass);
+    if (can) coffeeTableGroup.add(can);
 
+    this.group.add(coffeeTableGroup);
+
+    // Lámpara de pie de diseño
+    const lampGroup = new THREE.Group();
+    lampGroup.position.set(11.45, 0.0, -6.4);
     const legMat = new THREE.MeshStandardMaterial({
       color: "#15171F",
       roughness: 0.3,
       metalness: 0.85,
     });
-    [-0.42, 0.42].forEach((lx) => {
-      [-0.22, 0.22].forEach((lz) => {
-        const leg = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.015, 0.015, 0.34, 12),
-          legMat,
-        );
-        leg.position.set(10.5 + lx, 0.17, -4.5 + lz);
-        leg.castShadow = true;
-        this.group.add(leg);
-      });
-    });
-    this.group.add(ctTop);
-
-    this.place("waterGlass", { x: 10.35, y: 0.38, z: -4.6 }, { maxDim: 0.09 });
-    this.place("sodaCan", { x: 10.65, y: 0.38, z: -4.4 }, { maxDim: 0.1 });
-
-    // Lámpara de pie esbelta en la esquina este
-    const lampGroup = new THREE.Group();
-    lampGroup.position.set(11.45, 0.0, -6.4);
     const lampPole = new THREE.Mesh(
       new THREE.CylinderGeometry(0.015, 0.015, 1.7, 12),
       legMat,
@@ -818,13 +686,9 @@ export class PingPongArea {
   }
 
   createBeanBagPuff(x, z, colorHex) {
-    const puffMat = new THREE.MeshStandardMaterial({
-      color: colorHex,
-      roughness: 0.85,
-    });
     const puff = new THREE.Mesh(
       new THREE.SphereGeometry(0.32, 16, 16),
-      puffMat,
+      new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.85 }),
     );
     puff.scale.set(1.2, 0.65, 1.2);
     puff.position.set(x, 0.2, z);
@@ -832,73 +696,7 @@ export class PingPongArea {
     this.group.add(puff);
   }
 
-  // --- 6. PIZARRA TÁCTICA DE TORNEO (MAMPARA OESTE X = 4.55) ---
-  initTournamentWhiteboard() {
-    const boardGroup = new THREE.Group();
-    boardGroup.position.set(4.55, 0, -4.5);
-    boardGroup.rotation.y = Math.PI / 2;
-
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: "#CBD5E1",
-      metalness: 0.8,
-      roughness: 0.2,
-    });
-    const frame = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, 1.1, 0.04),
-      frameMat,
-    );
-    frame.position.y = 1.25;
-    frame.castShadow = true;
-
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 340;
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, 512, 340);
-
-    ctx.fillStyle = "#0F172A";
-    ctx.font = "bold 22px Arial";
-    ctx.fillText("🏆 TORNEO PING-PONG", 140, 42);
-
-    ctx.strokeStyle = "#2563EB";
-    ctx.lineWidth = 3;
-    [80, 140, 200, 260].forEach((ly) => {
-      ctx.beginPath();
-      ctx.moveTo(50, ly);
-      ctx.lineTo(150, ly);
-      ctx.stroke();
-    });
-    [110, 230].forEach((my, idx) => {
-      ctx.beginPath();
-      ctx.moveTo(150, 80 + idx * 120);
-      ctx.lineTo(150, 140 + idx * 120);
-      ctx.lineTo(260, my);
-      ctx.stroke();
-    });
-    ctx.beginPath();
-    ctx.moveTo(260, 110);
-    ctx.lineTo(260, 230);
-    ctx.lineTo(370, 170);
-    ctx.lineTo(440, 170);
-    ctx.stroke();
-
-    ctx.fillStyle = "#DC2626";
-    ctx.font = "bold 18px Arial";
-    ctx.fillText("FINAL", 380, 160);
-
-    const tex = new THREE.CanvasTexture(canvas);
-    const board = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.52, 1.02),
-      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4 }),
-    );
-    board.position.set(0, 1.25, 0.022);
-
-    boardGroup.add(frame, board);
-    this.group.add(boardGroup);
-  }
-
-  // --- 7. VEGETACIÓN DE GRAN PORTE ---
+  // --- 6. VEGETACIÓN ---
   initVegetation() {
     this.place(
       "plantFiddleLeaf",
@@ -915,14 +713,9 @@ export class PingPongArea {
       { x: 11.45, y: 0.0, z: -0.5 },
       { height: 1.55 },
     );
-    this.place(
-      "plantFlowerPot",
-      { x: 4.55, y: 0.0, z: -3.0 },
-      { height: 1.05 },
-    );
   }
 
-  // --- MODELADOS PROCEDIMENTALES DE SOPORTE ---
+  // --- MODELADOS PROCEDIMENTALES DE RESPALDO ---
   createPaddleProcedural(x, y, z, rotY, rubberHex) {
     const padGroup = new THREE.Group();
     padGroup.position.set(x, y, z);
@@ -956,39 +749,93 @@ export class PingPongArea {
     this.group.add(ball);
   }
 
+  createProceduralArcade(x, y, z) {
+    const arcGroup = new THREE.Group();
+    arcGroup.position.set(x, y, z);
+    // rotY = 0 para que la pantalla y los controles miren hacia el Norte (-Z, hacia la sala)
+    arcGroup.rotation.y = 0;
+
+    const w = 0.72,
+      h = 1.78,
+      d = 0.75;
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: "#0F172A",
+      roughness: 0.35,
+      metalness: 0.6,
+    });
+    const mainBody = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat);
+    mainBody.position.y = h / 2;
+    mainBody.castShadow = true;
+    arcGroup.add(mainBody);
+
+    const marquee = new THREE.Mesh(
+      new THREE.BoxGeometry(w - 0.04, 0.18, 0.04),
+      new THREE.MeshStandardMaterial({
+        color: "#38BDF8",
+        emissive: "#0284C7",
+        emissiveIntensity: 0.65,
+        roughness: 0.2,
+      }),
+    );
+    marquee.position.set(0, h - 0.12, -d / 2 - 0.015);
+
+    const screen = new THREE.Mesh(
+      new THREE.PlaneGeometry(w - 0.12, 0.42),
+      new THREE.MeshStandardMaterial({
+        color: "#10B981",
+        emissive: "#047857",
+        emissiveIntensity: 0.45,
+        roughness: 0.1,
+      }),
+    );
+    screen.position.set(0, h * 0.64, -d / 2 - 0.02);
+    screen.rotation.x = -0.22;
+
+    const ctrlPanel = new THREE.Mesh(
+      new THREE.BoxGeometry(w - 0.04, 0.05, 0.28),
+      new THREE.MeshStandardMaterial({ color: "#1E293B", roughness: 0.5 }),
+    );
+    ctrlPanel.position.set(0, h * 0.48, -d / 2 - 0.08);
+    ctrlPanel.rotation.x = 0.18;
+
+    arcGroup.add(marquee, screen, ctrlPanel);
+    this.group.add(arcGroup);
+  }
+
   createProceduralVendingMachine(x, y, z, type) {
     const vmGroup = new THREE.Group();
     vmGroup.position.set(x, y, z);
+    vmGroup.rotation.y = Math.PI;
 
     const w = 0.95,
       h = 1.85,
       d = 0.78;
     const bodyColor = type === "drinks" ? "#0F172A" : "#1E293B";
-    const bodyMat = new THREE.MeshStandardMaterial({
-      color: bodyColor,
-      roughness: 0.35,
-      metalness: 0.75,
-    });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat);
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, d),
+      new THREE.MeshStandardMaterial({
+        color: bodyColor,
+        roughness: 0.35,
+        metalness: 0.75,
+      }),
+    );
     body.position.set(0, h / 2, 0);
     body.castShadow = true;
     vmGroup.add(body);
 
-    const glassMat = new THREE.MeshPhysicalMaterial({
-      color: "#FFFFFF",
-      transmission: 0.9,
-      roughness: 0.1,
-      transparent: true,
-      opacity: 0.85,
-    });
     const glass = new THREE.Mesh(
       new THREE.BoxGeometry(w * 0.62, h * 0.55, 0.02),
-      glassMat,
+      new THREE.MeshPhysicalMaterial({
+        color: "#FFFFFF",
+        transmission: 0.9,
+        roughness: 0.1,
+        transparent: true,
+        opacity: 0.85,
+      }),
     );
     glass.position.set(-w * 0.14, h * 0.58, -d / 2 - 0.01);
     vmGroup.add(glass);
 
-    // Productos internos (latas o snacks)
     const colors =
       type === "drinks"
         ? ["#DC2626", "#2563EB", "#16A34A", "#F59E0B"]
@@ -1037,15 +884,15 @@ export class PingPongArea {
   createProceduralCubeCabinet(x, y, z) {
     const cabGroup = new THREE.Group();
     cabGroup.position.set(x, y, z);
+    cabGroup.rotation.y = Math.PI;
 
-    const w = 1.3,
+    const w = 1.25,
       h = 0.95,
       d = 0.4;
-    const woodMat = new THREE.MeshStandardMaterial({
-      color: "#2B170B",
-      roughness: 0.45,
-    });
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), woodMat);
+    const frame = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, d),
+      new THREE.MeshStandardMaterial({ color: "#2B170B", roughness: 0.45 }),
+    );
     frame.position.y = h / 2;
     frame.castShadow = true;
     cabGroup.add(frame);
@@ -1054,10 +901,10 @@ export class PingPongArea {
       color: "#140D07",
       roughness: 0.8,
     });
-    [-0.42, 0, 0.42].forEach((cx) => {
+    [-0.4, 0, 0.4].forEach((cx) => {
       [0.26, 0.68].forEach((cy) => {
         const cubby = new THREE.Mesh(
-          new THREE.BoxGeometry(0.35, 0.34, 0.02),
+          new THREE.BoxGeometry(0.34, 0.34, 0.02),
           darkMat,
         );
         cubby.position.set(cx, cy, -d / 2 - 0.001);
