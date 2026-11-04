@@ -1,5 +1,5 @@
 export const ASSETS_MANIFEST = [
-  // Personajes y Animaciones
+  // Personajes y Animaciones Base
   {
     name: "character",
     type: "gltf",
@@ -38,6 +38,53 @@ export const ASSETS_MANIFEST = [
   },
   { name: "animWalking", type: "fbx", path: "/models/animations/Walking.fbx" },
 
+  // Nuevas Animaciones de Interacción y Ocio
+  {
+    name: "animButtonPushing",
+    type: "fbx",
+    path: "/models/animations/Button Pushing.fbx",
+  },
+  {
+    name: "animSittingCheer",
+    type: "fbx",
+    path: "/models/animations/Cheering While Sitting.fbx",
+  },
+  {
+    name: "animDrinking",
+    type: "fbx",
+    path: "/models/animations/Drinking.fbx",
+  },
+  {
+    name: "animPointing",
+    type: "fbx",
+    path: "/models/animations/Pointing.fbx",
+  },
+  {
+    name: "animSittingDisbelief",
+    type: "fbx",
+    path: "/models/animations/Sitting Disbelief.fbx",
+  },
+  {
+    name: "animSittingTalking",
+    type: "fbx",
+    path: "/models/animations/Sitting Talking.fbx",
+  },
+  {
+    name: "animTalking",
+    type: "fbx",
+    path: "/models/animations/Talking.fbx",
+  },
+  {
+    name: "animTexting",
+    type: "fbx",
+    path: "/models/animations/Texting While Standing.fbx",
+  },
+  {
+    name: "animWalkingTurn180",
+    type: "fbx",
+    path: "/models/animations/Walking Turn 180.fbx",
+  },
+
   // Estaciones de Trabajo (Dev Pods y Supervisor)
   {
     name: "desk",
@@ -54,7 +101,7 @@ export const ASSETS_MANIFEST = [
   { name: "mouse", type: "gltf", path: "/models/workstations/mouse.glb" },
   { name: "mousepad", type: "gltf", path: "/models/workstations/mousepad.glb" },
 
-  // Arquitectura y Estructura (Paso 2)
+  // Arquitectura y Estructura
   {
     name: "doorwayOpen",
     type: "gltf",
