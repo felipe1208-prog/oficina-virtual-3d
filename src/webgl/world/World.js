@@ -9,6 +9,7 @@ import { DevArea } from "../zones/DevArea.js";
 import { CoffeeArea } from "../zones/CoffeeArea.js";
 import { PingPongArea } from "../zones/PingPongArea.js";
 import { LoungeArea } from "../zones/LoungeArea.js";
+import { CharacterManager } from "../characters/CharacterManager.js";
 
 export class World {
   constructor(experience) {
@@ -30,9 +31,13 @@ export class World {
     this.coffeeArea = new CoffeeArea(this.experience);
     this.pingPong = new PingPongArea(this.experience);
     this.lounge = new LoungeArea(this.experience);
+
+    // 3. Personajes y Animaciones
+    this.characters = new CharacterManager(this.experience);
   }
 
   update(delta) {
     if (this.supervisor) this.supervisor.update(delta);
+    if (this.characters) this.characters.update(delta);
   }
 }
