@@ -37,7 +37,7 @@ export class SupervisorOffice {
   }
 
   initExecutiveDesk() {
-    // 1. Escritorio Ejecutivo (Intacto en posición y rotación Math.PI / 2)
+    // 1. Escritorio Ejecutivo (Intacto en posición y rotación)
     const desk = this.place(
       "desk",
       { x: -8.4, y: 0, z: -5.6 },
@@ -66,49 +66,31 @@ export class SupervisorOffice {
       });
     }
 
-    // 2. Doble Monitor Profesional (Negro grafito antirreflejo, sin luz azul)
-    const setupMonitor = (m) => {
-      if (!m) return;
-      m.traverse((c) => {
-        if (c.isMesh && c.material) {
-          c.material = c.material.clone();
-          c.material.color.set("#14171E");
-          c.material.roughness = 0.35;
-          c.material.metalness = 0.2;
-          if (c.material.emissive) {
-            c.material.emissive.set("#000000");
-            c.material.emissiveIntensity = 0.0;
-          }
-        }
-      });
-    };
-
-    // Monitor Izquierdo (ligero ángulo hacia el centro)
-    const monL = this.place(
+    // 2. Doble Monitor: 10% más grandes (0.485m), separados y enfocados al supervisor
+    // Monitor Izquierdo (orientado al centro)
+    this.place(
       "monitor",
-      { x: -8.62, y: 0.75, z: -5.4 },
-      { height: 0.44 },
-      0.12,
+      { x: -8.67, y: 0.75, z: -5.26 },
+      { height: 0.485 },
+      -0.26,
     );
-    setupMonitor(monL);
 
-    // Monitor Derecho (ligero ángulo hacia el centro)
-    const monR = this.place(
+    // Monitor Derecho (orientado al centro)
+    this.place(
       "monitor",
-      { x: -8.2, y: 0.75, z: -5.4 },
-      { height: 0.44 },
-      -0.12,
+      { x: -8.13, y: 0.75, z: -5.26 },
+      { height: 0.485 },
+      0.26,
     );
-    setupMonitor(monR);
 
-    // 3. Teclado centrado frente al supervisor
-    this.place("keyboard", { x: -8.42, y: 0.753, z: -5.85 }, { width: 0.4 }, 0);
+    // 3. Hardware desplazado hacia adelante (hacia los monitores, liberando el borde inferior)
+    this.place("keyboard", { x: -8.4, y: 0.752, z: -5.58 }, { width: 0.38 }, 0);
 
-    // 4. Mousepad pequeño exclusivo para el ratón (22cm x 22cm) a la derecha del teclado
+    // 4. Mousepad pequeño a escala del ratón (20cm) adelantado
     const mousepad = this.place(
       "mousepad",
-      { x: -7.98, y: 0.752, z: -5.85 },
-      { width: 0.22 },
+      { x: -8.06, y: 0.751, z: -5.58 },
+      { width: 0.2 },
       0,
     );
     if (mousepad) {
@@ -121,11 +103,11 @@ export class SupervisorOffice {
       });
     }
 
-    // 5. Mouse apoyado encima del mousepad pequeño
-    this.place("mouse", { x: -7.98, y: 0.755, z: -5.85 }, { width: 0.08 }, 0);
+    // 5. Mouse apoyado encima del mousepad
+    this.place("mouse", { x: -8.06, y: 0.753, z: -5.58 }, { width: 0.08 }, 0);
 
-    // 6. Taza de café colocada en el lateral despejado del escritorio
-    this.place("coffeeMug", { x: -7.6, y: 0.753, z: -5.55 }, { maxDim: 0.11 });
+    // 6. Taza de café adelantada en el tablero seguro
+    this.place("coffeeMug", { x: -7.78, y: 0.752, z: -5.38 }, { maxDim: 0.11 });
   }
 
   initChairs() {
@@ -210,8 +192,7 @@ export class SupervisorOffice {
   }
 
   initGlassWallTV() {
-    // Televisor montado en la mampara de cristal sur (frente a la vista del supervisor)
-    const tvPos = { x: -8.4, y: 1.95, z: -2.92 };
+    const tvPos = { x: -8.4, y: 2.05, z: -2.85 };
     const tv = this.place("tvFlatScreen", tvPos, { height: 0.95 }, Math.PI);
     if (tv) {
       tv.traverse((c) => {
@@ -229,7 +210,6 @@ export class SupervisorOffice {
       });
     }
 
-    // Columna de montaje de acero estructural empotrada a la viga de la mampara
     const poleGeo = new THREE.CylinderGeometry(0.025, 0.025, 1.25, 16);
     const poleMat = new THREE.MeshStandardMaterial({
       color: "#15171E",
