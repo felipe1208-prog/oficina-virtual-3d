@@ -3,10 +3,9 @@ import { CHECKPOINTS, CHECKPOINT_TYPES } from "./checkpoints.config.js";
 
 export class CheckpointManager {
   constructor() {
-    // Clonar checkpoints para mutabilidad de estados en runtime
     this.checkpoints = JSON.parse(JSON.stringify(CHECKPOINTS));
-    this.queues = new Map(); // checkpointId -> [agentId, ...]
-    this.listeners = new Map(); // event -> [callbacks, ...]
+    this.queues = new Map();
+    this.listeners = new Map();
 
     Object.keys(this.checkpoints).forEach((id) => {
       this.queues.set(id, []);
@@ -17,27 +16,23 @@ export class CheckpointManager {
     return this.checkpoints[checkpointId] || null;
   }
 
-  // Intento de reserva inmediata (Locking at Intent)
   reserve(checkpointId, agentId) {
     const cp = this.checkpoints[checkpointId];
     if (!cp) return false;
 
-    // Si ya está libre o reservado por el mismo agente
     if (!cp.isOccupied && (!cp.reservedBy || cp.reservedBy === agentId)) {
       cp.reservedBy = agentId;
       cp.isOccupied = true;
       return true;
     }
 
-    // Si está ocupado por otro, encolar intención
     const queue = this.queues.get(checkpointId);
-    if (!queue.includes(agentId)) {
+    if (queue && !queue.includes(agentId)) {
       queue.push(agentId);
     }
     return false;
   }
 
-  // Liberar checkpoint y notificar al siguiente agente en la cola
   release(checkpointId, agentId) {
     const cp = this.checkpoints[checkpointId];
     if (!cp) return;
@@ -52,7 +47,8 @@ export class CheckpointManager {
         cp.reservedBy = nextAgentId;
         cp.isOccupied = true;
 
-        this.emit(`checkpoint:${checkpointId}:granted`, {
+        // Evento global seguro: notifica a todos los agentes quién tiene el turno
+        this.emit("turn:granted", {
           checkpointId,
           agentId: nextAgentId,
         });
@@ -60,11 +56,20 @@ export class CheckpointManager {
     }
   }
 
-  // Busca el asiento de espera disponible más cercano que NO sea un escritorio
+  removeFromQueue(checkpointId, agentId) {
+    if (!checkpointId) return;
+    const queue = this.queues.get(checkpointId);
+    if (queue) {
+      const idx = queue.indexOf(agentId);
+      if (idx !== -1) {
+        queue.splice(idx, 1);
+      }
+    }
+  }
+
   getNearestAvailableWaitingSeat(fromPosition) {
     let nearestSeat = null;
     let minDist = Infinity;
-
     const fromVec = new THREE.Vector2(fromPosition.x, fromPosition.z);
 
     Object.values(this.checkpoints).forEach((cp) => {
@@ -85,7 +90,6 @@ export class CheckpointManager {
     return nearestSeat;
   }
 
-  // Sistema de suscripción a eventos
   on(event, callback) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);

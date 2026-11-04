@@ -23,7 +23,7 @@ export class CharacterManager {
 
   update(delta) {
     for (let i = 0; i < this.characters.length; i++) {
-      this.characters[i].update(delta);
+      this.characters[i].update(delta, this.characters);
     }
   }
 }

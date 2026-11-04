@@ -11,13 +11,14 @@ export class Pathfinding {
     }
 
     if (startNodeId === endNodeId) {
-      return [new THREE.Vector3(targetPos.x, -0.34, targetPos.z)];
+      return [
+        navGraph.nodes.get(startNodeId).clone(),
+        new THREE.Vector3(targetPos.x, -0.34, targetPos.z),
+      ];
     }
 
-    // Algoritmo A* estándar sobre el grafo de navegación
     const openSet = [startNodeId];
     const cameFrom = new Map();
-
     const gScore = new Map();
     const fScore = new Map();
 
@@ -31,7 +32,6 @@ export class Pathfinding {
     fScore.set(startNodeId, navGraph.nodes.get(startNodeId).distanceTo(endVec));
 
     while (openSet.length > 0) {
-      // Obtener nodo con menor fScore
       let current = openSet[0];
       let lowestF = fScore.get(current);
       for (let i = 1; i < openSet.length; i++) {
@@ -43,22 +43,24 @@ export class Pathfinding {
       }
 
       if (current === endNodeId) {
-        // Reconstrucción del camino
         const path = [];
         let curr = current;
-        while (cameFrom.has(curr)) {
+        while (curr !== startNodeId) {
           path.unshift(navGraph.nodes.get(curr).clone());
           curr = cameFrom.get(curr);
         }
-        // Añadir el destino final exacto
+        // Clave: El primer nodo es el pasillo contiguo a la silla actual
+        path.unshift(navGraph.nodes.get(startNodeId).clone());
+
+        // El destino final es la posición exacta de interacción
         path.push(new THREE.Vector3(targetPos.x, -0.34, targetPos.z));
         return path;
       }
 
       openSet.splice(openSet.indexOf(current), 1);
       const currentPos = navGraph.nodes.get(current);
-
       const neighbors = navGraph.edges.get(current) || [];
+
       for (const neighborId of neighbors) {
         const neighborPos = navGraph.nodes.get(neighborId);
         const tentativeG =
@@ -76,6 +78,9 @@ export class Pathfinding {
       }
     }
 
-    return [new THREE.Vector3(targetPos.x, -0.34, targetPos.z)];
+    return [
+      navGraph.nodes.get(startNodeId).clone(),
+      new THREE.Vector3(targetPos.x, -0.34, targetPos.z),
+    ];
   }
 }

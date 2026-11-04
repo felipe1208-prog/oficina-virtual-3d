@@ -3,7 +3,7 @@ import * as THREE from "three";
 export class NavigationGraph {
   constructor() {
     this.nodes = new Map();
-    this.edges = new Map(); // nodeId -> [neighborId, ...]
+    this.edges = new Map();
 
     this.initGraph();
   }
@@ -21,88 +21,115 @@ export class NavigationGraph {
   }
 
   initGraph() {
-    // 1. Eje Central de Alfombra en "T" (Corredores libres de la oficina)[cite: 20, 28]
-    this.addNode("corridor-center-north", -2.35, 1.8);
-    this.addNode("corridor-center-mid", -2.35, 4.2);
-    this.addNode("corridor-center-south", -2.35, 6.5);
+    // -------------------------------------------------------------
+    // 1. PASILLO CENTRAL DE ALFOMBRA AZUL (EJE PRINCIPAL Z)
+    // -------------------------------------------------------------
+    this.addNode("corridor-south", -2.35, 7.1);
+    this.addNode("corridor-mid-south", -2.35, 5.2);
+    this.addNode("corridor-mid-north", -2.35, 3.2);
+    this.addNode("corridor-hub", -2.35, 1.8); // Intersección central en T
 
-    this.connect("corridor-center-north", "corridor-center-mid");
-    this.connect("corridor-center-mid", "corridor-center-south");
+    this.connect("corridor-south", "corridor-mid-south");
+    this.connect("corridor-mid-south", "corridor-mid-north");
+    this.connect("corridor-mid-north", "corridor-hub");
 
-    // 2. Corredor Este-Oeste Principal[cite: 20, 28]
-    this.addNode("corridor-junction-dev", -4.5, 1.8);
-    this.addNode("corridor-junction-mid", 0.5, 1.8);
-    this.addNode("corridor-junction-lounge", 4.5, 1.8);
+    // -------------------------------------------------------------
+    // 2. SALIDAS SEGURAS DE DESARROLLO (DEV POD 2)
+    // Pasillos traseros detrás de las sillas para no cortar escritorios
+    // -------------------------------------------------------------
+    // Pasillo Norte (detrás de Amarillo y Morado)
+    this.addNode("dev2-aisle-nw", -6.7, 3.2);
+    this.addNode("dev2-aisle-ne", -5.3, 3.2);
+    this.addNode("dev2-exit-n", -3.8, 3.2);
 
-    this.connect("corridor-junction-dev", "corridor-center-north");
-    this.connect("corridor-center-north", "corridor-junction-mid");
-    this.connect("corridor-junction-mid", "corridor-junction-lounge");
+    this.connect("dev2-aisle-nw", "dev2-aisle-ne");
+    this.connect("dev2-aisle-ne", "dev2-exit-n");
+    this.connect("dev2-exit-n", "corridor-mid-north");
 
-    // 3. Pasillos Internos de DevArea[cite: 20]
-    this.addNode("dev-aisle-pod2-north", -6.0, 3.2);
-    this.addNode("dev-aisle-pod2-south", -6.0, 7.2);
-    this.addNode("dev-aisle-pod1-north", -9.6, 3.2);
-    this.addNode("dev-aisle-pod1-south", -9.6, 7.2);
+    // Pasillo Sur (detrás de Naranja y Azul)
+    this.addNode("dev2-aisle-sw", -6.7, 7.1);
+    this.addNode("dev2-aisle-se", -5.3, 7.1);
+    this.addNode("dev2-exit-s", -3.8, 7.1);
 
-    this.connect("corridor-junction-dev", "dev-aisle-pod2-north");
-    this.connect("dev-aisle-pod2-north", "dev-aisle-pod1-north");
-    this.connect("corridor-center-south", "dev-aisle-pod2-south");
-    this.connect("dev-aisle-pod2-south", "dev-aisle-pod1-south");
+    this.connect("dev2-aisle-sw", "dev2-aisle-se");
+    this.connect("dev2-aisle-se", "dev2-exit-s");
+    this.connect("dev2-exit-s", "corridor-south");
 
-    // 4. Pasillo Cocina & Bar[cite: 26]
-    this.addNode("kitchen-entry", -0.5, 3.5);
-    this.addNode("kitchen-aisle-mid", -0.5, 5.7);
-    this.addNode("kitchen-aisle-south", -0.5, 7.2);
+    // -------------------------------------------------------------
+    // 3. CRUCE ESTE-OESTE (PROMENADE CENTRAL LIBRE DE PAREDES)
+    // -------------------------------------------------------------
+    this.addNode("promenade-kitchen-entry", -0.8, 1.8);
+    this.addNode("promenade-center", 1.6, 1.8);
+    this.addNode("promenade-east", 4.8, 1.8);
 
-    this.connect("corridor-junction-mid", "kitchen-entry");
-    this.connect("kitchen-entry", "kitchen-aisle-mid");
-    this.connect("kitchen-aisle-mid", "kitchen-aisle-south");
-    this.connect("corridor-center-mid", "kitchen-aisle-mid");
+    this.connect("corridor-hub", "promenade-kitchen-entry");
+    this.connect("promenade-kitchen-entry", "promenade-center");
+    this.connect("promenade-center", "promenade-east");
 
-    // 5. Entrada y Puerta Sala de Reuniones[cite: 23]
-    this.addNode("meeting-door-outside", 0.0, -2.5);
-    this.addNode("meeting-door-inside", 0.0, -3.8);
-    this.addNode("meeting-inside-west", -2.2, -6.0);
-    this.addNode("meeting-inside-east", 2.2, -6.0);
-    this.addNode("meeting-inside-stage", 0.0, -7.5);
+    // -------------------------------------------------------------
+    // 4. COCINA Y COFFEE BAR (RODEANDO EL MURO X = -1.86 POR EL NORTE)
+    // -------------------------------------------------------------
+    // Pasillo frente a electrodomésticos (entre encimera y barra)
+    this.addNode("kitchen-aisle-cooler", -0.8, 3.8);
+    this.addNode("kitchen-aisle-drip", -0.8, 5.75);
+    this.addNode("kitchen-aisle-espresso", -0.8, 6.45);
+    this.addNode("kitchen-aisle-fridge", -0.8, 7.35);
 
-    this.connect("corridor-junction-mid", "meeting-door-outside");
-    this.connect("meeting-door-outside", "meeting-door-inside");
-    this.connect("meeting-door-inside", "meeting-inside-west");
-    this.connect("meeting-door-inside", "meeting-inside-east");
-    this.connect("meeting-door-inside", "meeting-inside-stage");
+    this.connect("promenade-kitchen-entry", "kitchen-aisle-cooler");
+    this.connect("kitchen-aisle-cooler", "kitchen-aisle-drip");
+    this.connect("kitchen-aisle-drip", "kitchen-aisle-espresso");
+    this.connect("kitchen-aisle-espresso", "kitchen-aisle-fridge");
 
-    // 6. Entrada Oficina Supervisor[cite: 25]
-    this.addNode("supervisor-door-outside", -4.8, -2.5);
-    this.addNode("supervisor-inside-aisle", -6.5, -4.5);
+    // Pasillo exterior para los taburetes de la barra (al este de la barra)
+    this.addNode("barstools-aisle-north", 1.6, 3.5);
+    this.addNode("barstools-aisle-south", 1.6, 6.5);
 
-    this.connect("corridor-junction-dev", "supervisor-door-outside");
-    this.connect("supervisor-door-outside", "supervisor-inside-aisle");
+    this.connect("promenade-center", "barstools-aisle-north");
+    this.connect("barstools-aisle-north", "barstools-aisle-south");
 
-    // 7. Acceso y Tránsito Ping-Pong[cite: 24]
-    this.addNode("pingpong-entry", 4.5, -1.8);
-    this.addNode("pingpong-aisle-west", 6.0, -4.5);
-    this.addNode("pingpong-aisle-east", 9.5, -4.5);
-    this.addNode("pingpong-aisle-north", 7.5, -7.5);
+    // -------------------------------------------------------------
+    // 5. ZONA PING-PONG Y ARCADE (ACCESO SEGURO POR EL PORTAL X = 4.80)
+    // -------------------------------------------------------------
+    // Entrada sorteando el tabique de separación
+    this.addNode("pingpong-door-outside", 4.8, 0.5);
+    this.addNode("pingpong-door-inside", 4.8, -1.6);
 
-    this.connect("corridor-junction-lounge", "pingpong-entry");
-    this.connect("pingpong-entry", "pingpong-aisle-west");
-    this.connect("pingpong-aisle-west", "pingpong-aisle-east");
-    this.connect("pingpong-aisle-west", "pingpong-aisle-north");
+    this.connect("promenade-east", "pingpong-door-outside");
+    this.connect("pingpong-door-outside", "pingpong-door-inside");
 
-    // 8. Tránsito y Pasillos Lounge[cite: 28]
-    this.addNode("lounge-entry", 5.5, 2.5);
-    this.addNode("lounge-aisle-center", 8.0, 2.5);
-    this.addNode("lounge-aisle-east", 10.0, 2.5);
-    this.addNode("lounge-aisle-south", 8.0, 7.0);
+    // Distribución interior de Ping-Pong
+    this.addNode("pingpong-arcade-front", 6.2, -1.6);
+    this.addNode("pingpong-vending-front", 9.5, -1.6);
+    this.addNode("pingpong-table-south", 7.5, -2.6);
+    this.addNode("pingpong-west-aisle", 5.6, -4.5);
+    this.addNode("pingpong-table-north", 7.5, -6.6);
+    this.addNode("pingpong-spectator-lounge", 9.8, -4.5);
 
-    this.connect("corridor-junction-lounge", "lounge-entry");
-    this.connect("lounge-entry", "lounge-aisle-center");
-    this.connect("lounge-aisle-center", "lounge-aisle-east");
-    this.connect("lounge-aisle-center", "lounge-aisle-south");
+    this.connect("pingpong-door-inside", "pingpong-arcade-front");
+    this.connect("pingpong-arcade-front", "pingpong-vending-front");
+    this.connect("pingpong-arcade-front", "pingpong-table-south");
+    this.connect("pingpong-door-inside", "pingpong-west-aisle");
+    this.connect("pingpong-west-aisle", "pingpong-table-north");
+    this.connect("pingpong-table-south", "pingpong-spectator-lounge");
+    this.connect("pingpong-spectator-lounge", "pingpong-vending-front");
+
+    // -------------------------------------------------------------
+    // 6. LOUNGE MULTIMEDIA (CIRCULACIÓN PERIMETRAL ALREDEDOR DEL SOFÁ)
+    // -------------------------------------------------------------
+    this.addNode("lounge-entry", 5.8, 2.4);
+    this.addNode("lounge-north-aisle", 8.0, 2.4);
+    this.addNode("lounge-east-aisle", 10.6, 4.15);
+    this.addNode("lounge-south-aisle", 8.0, 6.8);
+    this.addNode("lounge-west-aisle", 5.6, 4.15);
+
+    this.connect("promenade-east", "lounge-entry");
+    this.connect("lounge-entry", "lounge-north-aisle");
+    this.connect("lounge-north-aisle", "lounge-east-aisle");
+    this.connect("lounge-east-aisle", "lounge-south-aisle");
+    this.connect("lounge-south-aisle", "lounge-west-aisle");
+    this.connect("lounge-west-aisle", "lounge-entry");
   }
 
-  // Encuentra el nodo más cercano a cualquier coordenada (X, Z) del diorama
   getClosestNodeId(pos) {
     let closestId = null;
     let minDist = Infinity;

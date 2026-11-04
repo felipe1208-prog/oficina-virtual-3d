@@ -8,7 +8,6 @@ export class CharacterLocomotion {
     this.currentWaypointIndex = 0;
     this.onArrival = options.onArrival || null;
 
-    // Sensor de evasión lateral para no atravesarse entre agentes
     this.sensorRange = 1.1;
     this.avoidanceForce = new THREE.Vector3();
   }
@@ -39,7 +38,6 @@ export class CharacterLocomotion {
         toOther.y = 0;
         toOther.normalize();
 
-        // Si están de frente, generar desvío hacia la derecha
         const lateral = new THREE.Vector3(-myForward.z, 0, myForward.x);
         const weight = (this.sensorRange - dist) / this.sensorRange;
         this.avoidanceForce.addScaledVector(lateral, weight * 0.45);
@@ -58,7 +56,11 @@ export class CharacterLocomotion {
     if (distance < 0.22) {
       this.currentWaypointIndex++;
       if (this.currentWaypointIndex >= this.waypoints.length) {
-        if (this.onArrival) this.onArrival();
+        if (this.onArrival) {
+          const cb = this.onArrival;
+          this.onArrival = null;
+          cb();
+        }
       }
       return;
     }
@@ -66,7 +68,6 @@ export class CharacterLocomotion {
     dir.normalize();
     const steerDir = dir.clone().add(this.avoidanceForce).normalize();
 
-    // Rotación suave hacia el vector resultante
     const targetAngle = Math.atan2(steerDir.x, steerDir.z);
     let diff = targetAngle - this.model.rotation.y;
     while (diff < -Math.PI) diff += Math.PI * 2;

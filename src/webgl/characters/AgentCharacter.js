@@ -20,7 +20,9 @@ export class AgentCharacter {
     this.waitingSeatId = null;
 
     this.state = "WORKING"; // WORKING | TRAVELING | WAITING | INTERACTING
-    this.activityTimer = 20 + Math.random() * 15; // Tiempo de trabajo antes de buscar ocio/café
+    this.activityTimer = 20 + Math.random() * 15;
+    this.interactionTimer = 0;
+    this.waitingTimer = 0;
 
     this.initHome();
     this.bindEvents();
@@ -40,18 +42,14 @@ export class AgentCharacter {
   }
 
   bindEvents() {
-    // Escuchar si se libera una estación a la que este agente esperaba
-    checkpointManager.on(
-      `checkpoint:${this.targetCheckpointId}:granted`,
-      (data) => {
-        if (data.agentId === this.config.id && this.state === "WAITING") {
-          this.leaveWaitingSeatAndProceedToTarget();
-        }
-      },
-    );
+    checkpointManager.on("turn:granted", (data) => {
+      if (data.agentId === this.config.id && this.state === "WAITING") {
+        this.targetCheckpointId = data.checkpointId;
+        this.leaveWaitingSeatAndProceedToTarget();
+      }
+    });
   }
 
-  // Deseo de interactuar con un checkpoint
   requestAction(checkpointId) {
     this.targetCheckpointId = checkpointId;
     const targetCP = checkpointManager.get(checkpointId);
@@ -60,14 +58,12 @@ export class AgentCharacter {
     const success = checkpointManager.reserve(checkpointId, this.config.id);
 
     if (success) {
-      // Estación libre: levantarse y caminar directamente
       this.transitionToWalk(() => {
         this.navigateTo(targetCP.pos, () => {
           this.arriveAtActionStation(targetCP);
         });
       });
     } else {
-      // Ocupada: buscar asiento de espera disponible
       const waitSeat = checkpointManager.getNearestAvailableWaitingSeat(
         this.model.position,
       );
@@ -80,13 +76,17 @@ export class AgentCharacter {
             this.arriveAtWaitingSeat(waitSeat);
           });
         });
+      } else {
+        this.activityTimer = 8 + Math.random() * 6;
       }
     }
   }
 
+  // De estar sentado en la mesa o sofá a levantarse y caminar
   transitionToWalk(onStoodUp) {
     this.state = "TRAVELING";
-    // Liberar el checkpoint actual en el que estaba sentado
+    this.locomotion.setPath([]); // Evita desplazamiento durante el levantamiento
+
     if (this.currentCheckpointId) {
       checkpointManager.release(this.currentCheckpointId, this.config.id);
       this.currentCheckpointId = null;
@@ -97,7 +97,7 @@ export class AgentCharacter {
       this.model.position.y = -0.34;
       this.animator.play("walking", 0.2);
       if (onStoodUp) onStoodUp();
-    }, 900);
+    }, 750);
   }
 
   navigateTo(destination, onArrival) {
@@ -111,13 +111,14 @@ export class AgentCharacter {
     this.model.position.set(cp.pos.x, cp.pos.y, cp.pos.z);
     this.model.rotation.y = cp.rotY;
 
-    const actionAnim = cp.actions[0] || "standingIdle";
+    let actionAnim = cp.actions[0] || "standingIdle";
+    if (!this.animator.actions.has(actionAnim)) {
+      actionAnim = "standingIdle";
+    }
     this.animator.play(actionAnim, 0.25);
 
-    // Tiempo de duración de la actividad (ej. servirse café dura 8 segundos)
-    setTimeout(() => {
-      this.returnHome();
-    }, 8000);
+    // Tiempo de permanencia en la actividad (entre 6 y 9 segundos)
+    this.interactionTimer = 6 + Math.random() * 3;
   }
 
   arriveAtWaitingSeat(seat) {
@@ -125,7 +126,14 @@ export class AgentCharacter {
     this.state = "WAITING";
     this.model.position.set(seat.pos.x, seat.pos.y, seat.pos.z);
     this.model.rotation.y = seat.rotY;
-    this.animator.play("sittingIdle", 0.25);
+
+    let waitAnim = seat.actions[0] || "sittingIdle";
+    if (!this.animator.actions.has(waitAnim)) {
+      waitAnim = "sittingIdle";
+    }
+    this.animator.play(waitAnim, 0.25);
+
+    this.waitingTimer = 14 + Math.random() * 6;
   }
 
   leaveWaitingSeatAndProceedToTarget() {
@@ -143,16 +151,35 @@ export class AgentCharacter {
     });
   }
 
+  abandonWaitingAndReturnHome() {
+    checkpointManager.removeFromQueue(this.targetCheckpointId, this.config.id);
+    this.targetCheckpointId = null;
+
+    this.transitionToWalk(() => {
+      this.returnHome();
+    });
+  }
+
   returnHome() {
     if (!this.homeCheckpointId) return;
 
-    // Liberar la estación de acción
+    // Activación obligatoria del estado de viaje
+    this.state = "TRAVELING";
+    this.interactionTimer = 0;
+
     if (this.currentCheckpointId) {
       checkpointManager.release(this.currentCheckpointId, this.config.id);
       this.currentCheckpointId = null;
     }
 
+    if (this.waitingSeatId) {
+      checkpointManager.release(this.waitingSeatId, this.config.id);
+      this.waitingSeatId = null;
+    }
+
     const home = checkpointManager.get(this.homeCheckpointId);
+    if (!home) return;
+
     checkpointManager.reserve(this.homeCheckpointId, this.config.id);
 
     this.animator.play("walking", 0.2);
@@ -164,7 +191,7 @@ export class AgentCharacter {
       this.model.position.set(home.pos.x, home.pos.y, home.pos.z);
       this.model.rotation.y = home.rotY;
       this.animator.play("typing", 0.25);
-      this.activityTimer = 25 + Math.random() * 20;
+      this.activityTimer = 22 + Math.random() * 18;
     });
   }
 
@@ -177,7 +204,6 @@ export class AgentCharacter {
     } else if (this.state === "WORKING") {
       this.activityTimer -= delta;
       if (this.activityTimer <= 0) {
-        // Disparar deseo aleatorio: ir a por café a la espresso o al agua
         const leisureDestinations = [
           "kitchen-espresso",
           "kitchen-water-cooler",
@@ -188,6 +214,16 @@ export class AgentCharacter {
             Math.floor(Math.random() * leisureDestinations.length)
           ];
         this.requestAction(pick);
+      }
+    } else if (this.state === "INTERACTING") {
+      this.interactionTimer -= delta;
+      if (this.interactionTimer <= 0) {
+        this.returnHome();
+      }
+    } else if (this.state === "WAITING") {
+      this.waitingTimer -= delta;
+      if (this.waitingTimer <= 0) {
+        this.abandonWaitingAndReturnHome();
       }
     }
   }
