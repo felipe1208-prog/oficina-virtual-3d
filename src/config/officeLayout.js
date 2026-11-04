@@ -36,7 +36,7 @@ export const DIORAMA_CONFIG = {
     {
       p1: { x: -4.5, z: -9.2 },
       p2: { x: 4.2, z: -9.2 },
-      windows: [], // Muro ciego para TV y pizarra
+      windows: [],
     },
     { p1: { x: 4.2, z: -9.2 }, p2: { x: 4.2, z: -8.5 }, windows: [] },
     {
@@ -54,7 +54,7 @@ export const DIORAMA_CONFIG = {
     },
   ],
 
-  // Mamparas acústicas frontales alineadas a Z: -2.8
+  // Mamparas acústicas
   glassRooms: {
     supervisor: {
       minX: -12.0,
@@ -72,7 +72,7 @@ export const DIORAMA_CONFIG = {
     },
   },
 
-  // Muros divisorios interiores
+  // Muros interiores
   interiorWalls: {
     kitchenWall: {
       x: -2.0,
@@ -90,28 +90,28 @@ export const DIORAMA_CONFIG = {
     },
   },
 
-  // Alfombras con proporciones limpias y paleta gris textil
+  // Alfombras unificadas en azul marino profundo
   carpets: [
     // Corredor vertical principal
-    { width: 1.8, length: 8.8, x: -3.2, z: 3.2, color: "#4B515D" },
+    { width: 1.8, length: 8.8, x: -3.2, z: 3.2, color: "#16233B" },
 
     // Corredor horizontal norte
-    { width: 10.4, length: 1.8, x: -1.0, z: -1.8, color: "#4B515D" },
+    { width: 10.4, length: 1.8, x: -1.0, z: -1.8, color: "#16233B" },
 
     // Sala de Reuniones
-    { width: 6.8, length: 4.8, x: 0.0, z: -6.0, color: "#3E4450" },
+    { width: 6.8, length: 4.8, x: 0.0, z: -6.0, color: "#1B2D4F" },
 
-    // Pod 1 (Bancada Oeste - 4 puestos)
-    { width: 3.2, length: 3.0, x: -9.6, z: 5.2, color: "#4A505C" },
+    // Pod 1 (Bancada Oeste)
+    { width: 3.2, length: 3.0, x: -9.6, z: 5.2, color: "#182846" },
 
-    // Pod 2 (Bancada Central-Sur - 4 puestos)
-    { width: 3.2, length: 3.0, x: -6.0, z: 5.2, color: "#4A505C" },
+    // Pod 2 (Bancada Central-Sur)
+    { width: 3.2, length: 3.0, x: -6.0, z: 5.2, color: "#182846" },
 
-    // Pod 3 (Isla Norte - 2 puestos)
-    { width: 2.2, length: 2.8, x: -7.8, z: 1.0, color: "#4A505C" },
+    // Pod 3 (Isla Norte)
+    { width: 2.2, length: 2.8, x: -7.8, z: 1.0, color: "#182846" },
 
     // Lounge
-    { width: 6.4, length: 5.4, x: 8.2, z: 4.6, color: "#3B414D" },
+    { width: 6.4, length: 5.4, x: 8.2, z: 4.6, color: "#16243D" },
   ],
 };
 
