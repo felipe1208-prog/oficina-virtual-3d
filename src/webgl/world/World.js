@@ -8,6 +8,7 @@ import { MeetingRoom } from "../zones/MeetingRoom.js";
 import { DevArea } from "../zones/DevArea.js";
 import { CoffeeArea } from "../zones/CoffeeArea.js";
 import { PingPongArea } from "../zones/PingPongArea.js";
+import { LoungeArea } from "../zones/LoungeArea.js";
 
 export class World {
   constructor(experience) {
@@ -28,6 +29,7 @@ export class World {
     this.devArea = new DevArea(this.experience);
     this.coffeeArea = new CoffeeArea(this.experience);
     this.pingPong = new PingPongArea(this.experience);
+    this.lounge = new LoungeArea(this.experience);
   }
 
   update(delta) {
