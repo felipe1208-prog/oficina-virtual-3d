@@ -356,10 +356,11 @@ export class LoungeArea {
   }
 
   // --- LIVING ROOM CENTRAL EN U ---
+  // --- LIVING ROOM CENTRAL EN U (ROTACIONES CORREGIDAS HACIA LA MESA) ---
   initLivingRoomSeating() {
     const couchW = 2.1;
 
-    // Sofá 3 plazas al Sur (mirando al Norte hacia el TV)
+    // 1. Sofá 3 plazas al Sur (mira al Norte -Z hacia el TV y la mesa)
     const couchSouth =
       this.place(
         "couchMedium",
@@ -375,54 +376,54 @@ export class LoungeArea {
       );
     if (!couchSouth) this.createProceduralSofa(8.0, 5.75, Math.PI, couchW);
 
-    // Sofá 2 plazas al Oeste (mirando al Este hacia el centro)
+    // 2. Sofá 2 plazas al Oeste: Rotado a Math.PI / 2 (mira al Este +X hacia la mesa)
     const couchWest =
       this.place(
         "couchMedium",
         { x: 5.85, y: 0.0, z: 4.15 },
         { width: 1.65 },
-        -Math.PI / 2,
+        Math.PI / 2,
       ) ||
       this.place(
         "couch-medium",
         { x: 5.85, y: 0.0, z: 4.15 },
         { width: 1.65 },
-        -Math.PI / 2,
+        Math.PI / 2,
       );
-    if (!couchWest) this.createProceduralSofa(5.85, 4.15, -Math.PI / 2, 1.65);
+    if (!couchWest) this.createProceduralSofa(5.85, 4.15, Math.PI / 2, 1.65);
 
-    // DOS butacas en el flanco Este AMBAS mirando al Oeste (-X) hacia la reunión
+    // 3. Dos butacas al Este: Rotadas a -Math.PI / 2 (miran al Oeste -X hacia la mesa)
     const chairNE =
       this.place(
         "couchSmall",
         { x: 10.15, y: 0.0, z: 3.35 },
         { width: 0.88 },
-        Math.PI / 2,
+        -Math.PI / 2,
       ) ||
       this.place(
         "couch-small",
         { x: 10.15, y: 0.0, z: 3.35 },
         { width: 0.88 },
-        Math.PI / 2,
+        -Math.PI / 2,
       );
-    if (!chairNE) this.createProceduralSofa(10.15, 3.35, Math.PI / 2, 0.88);
+    if (!chairNE) this.createProceduralSofa(10.15, 3.35, -Math.PI / 2, 0.88);
 
     const chairSE =
       this.place(
         "couchSmall",
         { x: 10.15, y: 0.0, z: 4.95 },
         { width: 0.88 },
-        Math.PI / 2,
+        -Math.PI / 2,
       ) ||
       this.place(
         "couch-small",
         { x: 10.15, y: 0.0, z: 4.95 },
         { width: 0.88 },
-        Math.PI / 2,
+        -Math.PI / 2,
       );
-    if (!chairSE) this.createProceduralSofa(10.15, 4.95, Math.PI / 2, 0.88);
+    if (!chairSE) this.createProceduralSofa(10.15, 4.95, -Math.PI / 2, 0.88);
 
-    // Puffs otomanos contemporáneos
+    // Puffs otomanos contemporáneos en esquinas libres
     this.createBeanBagPuff(6.65, 2.45, "#D97706");
     this.createBeanBagPuff(9.35, 5.75, "#1E3A8A");
   }
