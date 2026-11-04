@@ -16,28 +16,28 @@ export class DevArea {
     this.group = new THREE.Group();
     this.group.name = "zone-dev-area";
 
-    // 1. Pod 1: Bancada Oeste (2 parejas = 4 puestos enfrentados cara a cara)
+    // 1. Pod 1: Bancada Oeste (2 parejas = 4 puestos)
     this.buildWorkbenchPod({
       centerX: -9.6,
       centerZ: 5.2,
       pairs: 2,
     });
 
-    // 2. Pod 2: Bancada Central-Sur (2 parejas = 4 puestos enfrentados cara a cara)
+    // 2. Pod 2: Bancada Central-Sur (2 parejas = 4 puestos)
     this.buildWorkbenchPod({
       centerX: -6.0,
       centerZ: 5.2,
       pairs: 2,
     });
 
-    // 3. Pod 3: Isla Norte (1 pareja = 2 puestos enfrentados cara a cara, sin anillo amarillo)
+    // 3. Pod 3: Isla Norte (1 pareja = 2 puestos)
     this.buildWorkbenchPod({
       centerX: -7.8,
       centerZ: 1.0,
       pairs: 1,
     });
 
-    // 4. Vegetación decorativa
+    // 4. Vegetación perimetral (pasillos 100% libres)
     this.initVegetation();
 
     this.scene.add(this.group);
@@ -62,18 +62,18 @@ export class DevArea {
     return fitted;
   }
 
-  // --- CONSTRUCCIÓN DE ISLA TÉCNICA ("DE 2 EN 2") ---
+  // --- ESTRUCTURA DE LA BANCADA TÉCNICA ---
   buildWorkbenchPod({ centerX, centerZ, pairs }) {
     const podGroup = new THREE.Group();
     const tableH = 0.75;
     const tableTopThickness = 0.045;
     const slotW = 1.4;
     const totalW = slotW * pairs;
-    const totalD = 1.5; // 0.75m por lado enfrentado
+    const totalD = 1.5; // 0.75m por lado
 
-    // 1. Tablero principal en nogal técnico satinado
+    // 1. Tablero principal en nogal satinado
     const topMat = new THREE.MeshStandardMaterial({
-      color: "#3B2417",
+      color: "#382215",
       roughness: 0.42,
       metalness: 0.04,
     });
@@ -86,9 +86,9 @@ export class DevArea {
     deskTop.receiveShadow = true;
     podGroup.add(deskTop);
 
-    // 2. Panel divisor acústico central (separa a los desarrolladores enfrentados)
+    // 2. Panel divisor acústico central
     const dividerMat = new THREE.MeshStandardMaterial({
-      color: "#222731",
+      color: "#20242D",
       roughness: 0.85,
     });
     const divider = new THREE.Mesh(
@@ -112,7 +112,6 @@ export class DevArea {
         : [centerX - totalW / 2 + 0.05, centerX + totalW / 2 - 0.05];
 
     legPositionsX.forEach((lx) => {
-      // Pata Norte
       const legN = new THREE.Mesh(
         new THREE.BoxGeometry(0.05, tableH - tableTopThickness, 0.05),
         legMat,
@@ -124,7 +123,6 @@ export class DevArea {
       );
       legN.castShadow = true;
 
-      // Pata Sur
       const legS = new THREE.Mesh(
         new THREE.BoxGeometry(0.05, tableH - tableTopThickness, 0.05),
         legMat,
@@ -136,7 +134,6 @@ export class DevArea {
       );
       legS.castShadow = true;
 
-      // Travesaño de base
       const foot = new THREE.Mesh(
         new THREE.BoxGeometry(0.05, 0.03, totalD - 0.08),
         legMat,
@@ -149,129 +146,217 @@ export class DevArea {
 
     this.group.add(podGroup);
 
-    // 4. Equipamiento puesto por puesto (cara a cara)
+    // 4. Equipamiento en ambos lados (Norte y Sur)
     const slotCentersX =
       pairs === 2 ? [centerX - slotW / 2, centerX + slotW / 2] : [centerX];
 
     slotCentersX.forEach((sx, idx) => {
-      // Puesto Norte (sentado al norte, mirando al sur)
+      // Puesto Fila Norte (sentado al norte, mirando al sur)
       this.buildStationHardware({
         slotX: sx,
         centerZ: centerZ,
-        facing: "south",
-        chairTone: idx % 2 === 0 ? "#20242C" : "#282D36",
+        isNorth: true,
+        chairTone: idx % 2 === 0 ? "#22262E" : "#2A2F38",
       });
 
-      // Puesto Sur (sentado al sur, mirando al norte)
+      // Puesto Fila Sur (sentado al sur, mirando al norte)
       this.buildStationHardware({
         slotX: sx,
         centerZ: centerZ,
-        facing: "north",
-        chairTone: idx % 2 === 0 ? "#282D36" : "#20242C",
+        isNorth: false,
+        chairTone: idx % 2 === 0 ? "#2A2F38" : "#22262E",
       });
     });
   }
 
-  // --- HARDWARE, MONITORES Y SILLA DE CADA PUESTO ---
-  buildStationHardware({ slotX, centerZ, facing, chairTone }) {
-    const isFacingNorth = facing === "north";
-    const dir = isFacingNorth ? -1 : 1;
-    const baseRot = isFacingNorth ? Math.PI : 0;
+  // --- HARDWARE, MONITORES Y SILLA POR PUESTO ---
+  buildStationHardware({ slotX, centerZ, isNorth, chairTone }) {
+    if (isNorth) {
+      // === PUESTO NORTE (Usuario en Z < centerZ, mira al SUR +Z) ===
 
-    // Monitores duales cóncavos enfrentados hacia el usuario
-    const monZ = centerZ + 0.16 * dir;
-    const monRotL = isFacingNorth ? Math.PI - 0.22 : 0.22;
-    const monRotR = isFacingNorth ? Math.PI + 0.22 : -0.22;
+      // 1. Doble Monitor: caras mirando al Norte (-Z) hacia el usuario, cóncavos hacia el centro
+      this.place(
+        "monitor",
+        { x: slotX + 0.28, y: 0.75, z: centerZ - 0.2 },
+        { height: 0.44 },
+        -0.24,
+      );
+      this.place(
+        "monitor",
+        { x: slotX - 0.28, y: 0.75, z: centerZ - 0.2 },
+        { height: 0.44 },
+        0.24,
+      );
 
-    this.place(
-      "monitor",
-      { x: slotX - 0.26, y: 0.75, z: monZ },
-      { height: 0.44 },
-      monRotL,
-    );
-    this.place(
-      "monitor",
-      { x: slotX + 0.26, y: 0.75, z: monZ },
-      { height: 0.44 },
-      monRotR,
-    );
+      // 2. Teclado frente al usuario
+      this.place(
+        "keyboard",
+        { x: slotX, y: 0.752, z: centerZ - 0.52 },
+        { width: 0.36 },
+        0,
+      );
 
-    // Teclado
-    const hwZ = centerZ + 0.38 * dir;
-    this.place(
-      "keyboard",
-      { x: slotX, y: 0.752, z: hwZ },
-      { width: 0.36 },
-      baseRot,
-    );
+      // 3. Mousepad y Mouse en la mano derecha del usuario (hacia -X)
+      const pad = this.place(
+        "mousepad",
+        { x: slotX - 0.38, y: 0.751, z: centerZ - 0.52 },
+        { width: 0.2 },
+        0,
+      );
+      if (pad) {
+        pad.traverse((c) => {
+          if (c.isMesh && c.material) {
+            c.material = c.material.clone();
+            c.material.color.set("#161820");
+            c.material.roughness = 0.85;
+          }
+        });
+      }
+      this.place(
+        "mouse",
+        { x: slotX - 0.38, y: 0.753, z: centerZ - 0.52 },
+        { width: 0.08 },
+        0,
+      );
 
-    // Mousepad de 20cm y ratón a la derecha del usuario
-    const mouseX = isFacingNorth ? slotX + 0.36 : slotX - 0.36;
-    const pad = this.place(
-      "mousepad",
-      { x: mouseX, y: 0.751, z: hwZ },
-      { width: 0.2 },
-      0,
-    );
-    if (pad) {
-      pad.traverse((c) => {
-        if (c.isMesh && c.material) {
-          c.material = c.material.clone();
-          c.material.color.set("#161820");
-          c.material.roughness = 0.85;
-        }
+      // 4. Taza de café en la mano izquierda del usuario (hacia +X)
+      this.place(
+        "coffeeMug",
+        { x: slotX + 0.44, y: 0.752, z: centerZ - 0.48 },
+        { maxDim: 0.1 },
+      );
+
+      // 5. Torre PC bajo la mesa
+      const pcMat = new THREE.MeshStandardMaterial({
+        color: "#111317",
+        roughness: 0.3,
+        metalness: 0.85,
       });
-    }
-    this.place(
-      "mouse",
-      { x: mouseX, y: 0.753, z: hwZ },
-      { width: 0.08 },
-      baseRot,
-    );
+      const pcCase = new THREE.Mesh(
+        new THREE.BoxGeometry(0.18, 0.42, 0.42),
+        pcMat,
+      );
+      pcCase.position.set(slotX + 0.52, 0.21, centerZ - 0.35);
+      pcCase.castShadow = true;
+      this.group.add(pcCase);
 
-    // Taza de café a la izquierda del usuario
-    const mugX = isFacingNorth ? slotX - 0.44 : slotX + 0.44;
-    this.place("coffeeMug", { x: mugX, y: 0.752, z: hwZ }, { maxDim: 0.1 });
+      // 6. Silla Ergonómica extraída (Z = centerZ - 1.12m, mirando al Sur rotY = 0)
+      const chair = this.place(
+        "chair",
+        { x: slotX, y: 0, z: centerZ - 1.12 },
+        { height: 1.02 },
+        0,
+      );
+      if (chair) {
+        chair.traverse((child) => {
+          if (child.isMesh && child.material) {
+            child.material = child.material.clone();
+            child.material.color.set(chairTone);
+            child.material.roughness = 0.52;
+            child.material.metalness = 0.05;
+          }
+        });
+      }
+    } else {
+      // === PUESTO SUR (Usuario en Z > centerZ, mira al NORTE -Z) ===
 
-    // Torre de PC bajo mesa
-    const pcMat = new THREE.MeshStandardMaterial({
-      color: "#111317",
-      roughness: 0.3,
-      metalness: 0.85,
-    });
-    const pcCase = new THREE.Mesh(
-      new THREE.BoxGeometry(0.18, 0.42, 0.42),
-      pcMat,
-    );
-    const pcX = isFacingNorth ? slotX + 0.52 : slotX - 0.52;
-    pcCase.position.set(pcX, 0.21, centerZ + 0.24 * dir);
-    pcCase.castShadow = true;
-    this.group.add(pcCase);
+      // 1. Doble Monitor: caras mirando al Sur (+Z) hacia el usuario, cóncavos hacia el centro
+      this.place(
+        "monitor",
+        { x: slotX - 0.28, y: 0.75, z: centerZ + 0.2 },
+        { height: 0.44 },
+        Math.PI - 0.24,
+      );
+      this.place(
+        "monitor",
+        { x: slotX + 0.28, y: 0.75, z: centerZ + 0.2 },
+        { height: 0.44 },
+        Math.PI + 0.24,
+      );
 
-    // Silla ergonómica corporativa en tono oscuro normal
-    const chairZ = centerZ + 0.72 * dir;
-    const chair = this.place(
-      "chair",
-      { x: slotX, y: 0, z: chairZ },
-      { height: 1.02 },
-      baseRot,
-    );
-    if (chair) {
-      chair.traverse((child) => {
-        if (child.isMesh && child.material) {
-          child.material = child.material.clone();
-          child.material.color.set(chairTone);
-          child.material.roughness = 0.52;
-          child.material.metalness = 0.05;
-        }
+      // 2. Teclado frente al usuario
+      this.place(
+        "keyboard",
+        { x: slotX, y: 0.752, z: centerZ + 0.52 },
+        { width: 0.36 },
+        Math.PI,
+      );
+
+      // 3. Mousepad y Mouse en la mano derecha del usuario (hacia +X)
+      const pad = this.place(
+        "mousepad",
+        { x: slotX + 0.38, y: 0.751, z: centerZ + 0.52 },
+        { width: 0.2 },
+        Math.PI,
+      );
+      if (pad) {
+        pad.traverse((c) => {
+          if (c.isMesh && c.material) {
+            c.material = c.material.clone();
+            c.material.color.set("#161820");
+            c.material.roughness = 0.85;
+          }
+        });
+      }
+      this.place(
+        "mouse",
+        { x: slotX + 0.38, y: 0.753, z: centerZ + 0.52 },
+        { width: 0.08 },
+        Math.PI,
+      );
+
+      // 4. Taza de café en la mano izquierda del usuario (hacia -X)
+      this.place(
+        "coffeeMug",
+        { x: slotX - 0.44, y: 0.752, z: centerZ + 0.48 },
+        { maxDim: 0.1 },
+      );
+
+      // 5. Torre PC bajo la mesa
+      const pcMat = new THREE.MeshStandardMaterial({
+        color: "#111317",
+        roughness: 0.3,
+        metalness: 0.85,
       });
+      const pcCase = new THREE.Mesh(
+        new THREE.BoxGeometry(0.18, 0.42, 0.42),
+        pcMat,
+      );
+      pcCase.position.set(slotX - 0.52, 0.21, centerZ + 0.35);
+      pcCase.castShadow = true;
+      this.group.add(pcCase);
+
+      // 6. Silla Ergonómica extraída (Z = centerZ + 1.12m, mirando al Norte rotY = Math.PI)
+      const chair = this.place(
+        "chair",
+        { x: slotX, y: 0, z: centerZ + 1.12 },
+        { height: 1.02 },
+        Math.PI,
+      );
+      if (chair) {
+        chair.traverse((child) => {
+          if (child.isMesh && child.material) {
+            child.material = child.material.clone();
+            child.material.color.set(chairTone);
+            child.material.roughness = 0.52;
+            child.material.metalness = 0.05;
+          }
+        });
+      }
     }
   }
 
   initVegetation() {
-    this.place("plantFiddleLeaf", { x: -11.4, y: 0, z: 2.5 }, { height: 1.45 });
-    this.place("plantFlowerPot", { x: -7.8, y: 0, z: 3.3 }, { height: 1.1 });
-    this.place("plantFlowerPot", { x: -4.4, y: 0, z: 2.2 }, { height: 1.1 });
-    this.place("plantFiddleLeaf", { x: -11.4, y: 0, z: 7.8 }, { height: 1.5 });
+    // Esquina entre Pod 3 y el ventanal oeste
+    this.place("plantFiddleLeaf", { x: -11.4, y: 0, z: 0.0 }, { height: 1.45 });
+
+    // Ventanal entre Pod 1 y la fachada oeste
+    this.place("plantFlowerPot", { x: -11.4, y: 0, z: 3.5 }, { height: 1.1 });
+
+    // Esquina frontal suroeste
+    this.place("plantFiddleLeaf", { x: -11.4, y: 0, z: 8.0 }, { height: 1.5 });
+
+    // Esquina lateral junto al pasillo principal
+    this.place("plantFlowerPot", { x: -4.0, y: 0, z: 2.5 }, { height: 1.1 });
   }
 }
