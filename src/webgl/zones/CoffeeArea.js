@@ -26,7 +26,7 @@ export class CoffeeArea {
     // 3. Estantes Flotantes en Pared
     this.initFloatingShelves();
 
-    // 4. Estación de Agua y Papelera
+    // 4. Estación de Agua (Rotada 180°) y Papelera
     this.initWaterStationAndTrash();
 
     // 5. Barra de Desayuno y Taburetes
@@ -65,7 +65,7 @@ export class CoffeeArea {
 
     const wallFaceX = -1.86;
     const cWidth = 0.65;
-    const cLength = 2.5; // Termina en Z = 6.95 para dejar espacio a la nevera
+    const cLength = 2.5;
     const cHeight = 0.9;
     const centerX = wallFaceX + cWidth / 2; // -1.535
     const centerZ = 5.7;
@@ -145,7 +145,6 @@ export class CoffeeArea {
     faucetArch.castShadow = true;
 
     counterGroup.add(faucetStem, faucetArch);
-
     this.group.add(counterGroup);
   }
 
@@ -154,7 +153,7 @@ export class CoffeeArea {
     const tableY = 0.9;
     const cX = -1.535;
 
-    // Cafetera 1: Rotada 180° (Math.PI / 2) mirando al Este (+X)
+    // Cafetera 1: Máquina de filtro con jarra (Z = 5.75, mirando al Este +X)
     const coffee1 = this.place(
       "coffeeMachine",
       { x: cX, y: tableY, z: 5.75 },
@@ -165,35 +164,28 @@ export class CoffeeArea {
       this.createProceduralDripMaker(cX, tableY, 5.75);
     }
 
-    // Cafetera 2: Segunda máquina de café (Z = 6.45, mirando al Este +X)
+    // Cafetera 2: Estación Espresso Barista orientada hacia el frente (+X)
     const coffee2 =
       this.place(
         "coffeeMachine2",
         { x: cX, y: tableY, z: 6.45 },
         { height: 0.44 },
-        Math.PI / 2,
+        0,
       ) ||
       this.place(
         "coffee-machine-2",
         { x: cX, y: tableY, z: 6.45 },
         { height: 0.44 },
-        Math.PI / 2,
+        0,
       ) ||
       this.place(
         "espressoMachine",
         { x: cX, y: tableY, z: 6.45 },
         { height: 0.44 },
-        Math.PI / 2,
-      ) ||
-      this.place(
-        "coffeeMaker",
-        { x: cX, y: tableY, z: 6.45 },
-        { height: 0.44 },
-        Math.PI / 2,
+        0,
       );
 
     if (!coffee2) {
-      // Si no existe un GLB adicional con nombre alternativo, se crea una máquina espresso doble
       this.createProceduralEspressoBar(cX, tableY, 6.45);
     }
 
@@ -209,7 +201,7 @@ export class CoffeeArea {
       { maxDim: 0.1 },
     );
 
-    // Botellas de sirope junto a la cafetera
+    // Botellas de sirope gourmet
     const syrupColors = ["#B45309", "#78350F", "#D97706"];
     syrupColors.forEach((col, i) => {
       const bGroup = new THREE.Group();
@@ -259,12 +251,11 @@ export class CoffeeArea {
     this.group.add(soap);
   }
 
-  // --- 3. NEVERA (Z = 7.38, VISIBLE Y SIN SOLAPAMIENTOS) ---
+  // --- 3. NEVERA (Z = 7.38) ---
   initRefrigerator() {
     const fridgeX = -1.535;
     const fridgeZ = 7.38;
 
-    // Intenta posicionar el asset fridge.glb con la puerta orientada a la habitación (+X)
     const fridge =
       this.place(
         "fridge",
@@ -280,7 +271,6 @@ export class CoffeeArea {
       );
 
     if (!fridge) {
-      // Nevera ejecutiva en acero carbón cepillado
       const fridgeGroup = new THREE.Group();
       fridgeGroup.position.set(fridgeX, 0.0, fridgeZ);
 
@@ -295,7 +285,6 @@ export class CoffeeArea {
         metalness: 0.95,
       });
 
-      // Cuerpo principal
       const body = new THREE.Mesh(
         new THREE.BoxGeometry(0.6, 1.55, 0.68),
         steelMat,
@@ -305,7 +294,6 @@ export class CoffeeArea {
       body.receiveShadow = true;
       fridgeGroup.add(body);
 
-      // Puerta superior (congelador)
       const doorTop = new THREE.Mesh(
         new THREE.BoxGeometry(0.02, 0.52, 0.66),
         steelMat,
@@ -313,7 +301,6 @@ export class CoffeeArea {
       doorTop.position.set(0.31, 1.25, 0);
       doorTop.castShadow = true;
 
-      // Puerta inferior
       const doorBottom = new THREE.Mesh(
         new THREE.BoxGeometry(0.02, 0.94, 0.66),
         steelMat,
@@ -321,7 +308,6 @@ export class CoffeeArea {
       doorBottom.position.set(0.31, 0.49, 0);
       doorBottom.castShadow = true;
 
-      // Tiradores verticales en cromo
       const handleTop = new THREE.Mesh(
         new THREE.CylinderGeometry(0.008, 0.008, 0.32, 12),
         chromeMat,
@@ -414,14 +400,14 @@ export class CoffeeArea {
     });
   }
 
-  // --- 5. DISPENSADOR DE AGUA ROTADO 90° Y PAPELERA ---
+  // --- 5. DISPENSADOR DE AGUA (ROTADO 180° = 0 RAD) Y PAPELERA ---
   initWaterStationAndTrash() {
-    // Rotado a Math.PI para que los grifos apunten al Este (+X)
+    // Rotado 180° (rotY = 0) para que la toma de agua y los pulsadores miren al Este (+X)
     const cooler = this.place(
       "waterCooler",
       { x: -1.55, y: 0.0, z: 4.0 },
       { height: 1.4 },
-      Math.PI,
+      0,
     );
     if (!cooler) {
       const coolerGroup = new THREE.Group();
@@ -438,7 +424,7 @@ export class CoffeeArea {
       body.position.y = 0.475;
       body.castShadow = true;
 
-      // Cavidad frontal de dispensación mirando al Este (+X)
+      // Cavidad frontal orientada al frente (+X)
       const recessMat = new THREE.MeshStandardMaterial({
         color: "#CBD5E1",
         roughness: 0.5,
@@ -449,7 +435,6 @@ export class CoffeeArea {
       );
       recess.position.set(0.17, 0.65, 0);
 
-      // Pulsadores rojo y azul
       const btnRed = new THREE.Mesh(
         new THREE.BoxGeometry(0.02, 0.04, 0.03),
         new THREE.MeshStandardMaterial({ color: "#EF4444" }),
@@ -462,7 +447,6 @@ export class CoffeeArea {
       );
       btnBlue.position.set(0.18, 0.72, 0.04);
 
-      // Botellón azul
       const jugMat = new THREE.MeshPhysicalMaterial({
         color: "#0284C7",
         transmission: 0.75,
@@ -614,7 +598,7 @@ export class CoffeeArea {
     );
   }
 
-  // Fallbacks procedimentales
+  // --- MODELADO PROCEDURAL DETALLADO ---
   createProceduralDripMaker(x, y, z) {
     const group = new THREE.Group();
     group.position.set(x, y, z);
@@ -646,47 +630,143 @@ export class CoffeeArea {
   createProceduralEspressoBar(x, y, z) {
     const group = new THREE.Group();
     group.position.set(x, y, z);
-    group.rotation.y = Math.PI / 2;
+    // rotY = 0 para que el frontal (+X local) mire hacia el Este (+X global / hacia la barra)
+    group.rotation.y = 0;
+
+    const widthZ = 0.38;
+    const depthX = 0.32;
+    const heightY = 0.38;
 
     const chromeMat = new THREE.MeshStandardMaterial({
       color: "#E2E8F0",
-      roughness: 0.2,
-      metalness: 0.9,
+      roughness: 0.18,
+      metalness: 0.92,
     });
-    const darkMat = new THREE.MeshStandardMaterial({
-      color: "#15171E",
-      roughness: 0.4,
-      metalness: 0.7,
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: "#1E232A",
+      roughness: 0.45,
+      metalness: 0.6,
+    });
+    const glassMat = new THREE.MeshPhysicalMaterial({
+      color: "#FFFFFF",
+      transmission: 0.85,
+      roughness: 0.1,
+      transparent: true,
+      opacity: 0.8,
+    });
+    const beanMat = new THREE.MeshStandardMaterial({
+      color: "#3A2012",
+      roughness: 0.85,
     });
 
+    // Chasis principal
     const body = new THREE.Mesh(
-      new THREE.BoxGeometry(0.32, 0.4, 0.36),
-      darkMat,
+      new THREE.BoxGeometry(depthX, heightY, widthZ),
+      bodyMat,
     );
-    body.position.y = 0.2;
+    body.position.set(0, heightY / 2, 0);
     body.castShadow = true;
+    body.receiveShadow = true;
+    group.add(body);
 
+    // Frontal en acero inoxidable cepillado (frente en +X)
+    const frontFaceX = depthX / 2 + 0.005;
     const frontPanel = new THREE.Mesh(
-      new THREE.BoxGeometry(0.02, 0.38, 0.34),
+      new THREE.BoxGeometry(0.01, heightY * 0.55, widthZ - 0.04),
       chromeMat,
     );
-    frontPanel.position.set(0.16, 0.2, 0);
+    frontPanel.position.set(frontFaceX, heightY * 0.65, 0);
+    group.add(frontPanel);
 
-    const portafilter1 = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.025, 0.025, 0.08, 12),
+    // Rejilla / Bandeja inferior de goteo
+    const dripTray = new THREE.Mesh(
+      new THREE.BoxGeometry(0.1, 0.03, widthZ - 0.02),
       chromeMat,
     );
-    portafilter1.rotation.z = Math.PI / 2;
-    portafilter1.position.set(0.2, 0.22, -0.07);
+    dripTray.position.set(frontFaceX + 0.045, 0.015, 0);
+    dripTray.castShadow = true;
+    group.add(dripTray);
 
-    const portafilter2 = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.025, 0.025, 0.08, 12),
+    // Dos grupos cromados con portafiltros y mangos orientados hacia la barra (+X)
+    const groupZOffsets = [-0.08, 0.08];
+    groupZOffsets.forEach((gz) => {
+      const head = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.024, 0.026, 0.06, 16),
+        chromeMat,
+      );
+      head.position.set(frontFaceX + 0.03, heightY * 0.52, gz);
+      head.castShadow = true;
+
+      const portafilter = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.022, 0.022, 0.03, 16),
+        chromeMat,
+      );
+      portafilter.position.set(frontFaceX + 0.03, heightY * 0.47, gz);
+
+      const handle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.007, 0.009, 0.1, 12),
+        bodyMat,
+      );
+      handle.rotation.z = Math.PI / 2;
+      handle.position.set(frontFaceX + 0.09, heightY * 0.47, gz);
+      handle.castShadow = true;
+
+      group.add(head, portafilter, handle);
+    });
+
+    // Manómetros gemelos en el panel frontal
+    [-0.03, 0.03].forEach((gz) => {
+      const gauge = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.016, 0.016, 0.006, 16),
+        chromeMat,
+      );
+      gauge.rotation.z = Math.PI / 2;
+      gauge.position.set(frontFaceX + 0.008, heightY * 0.78, gz);
+      group.add(gauge);
+    });
+
+    // Varilla de vapor lateral
+    const wand = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.005, 0.005, 0.14, 8),
       chromeMat,
     );
-    portafilter2.rotation.z = Math.PI / 2;
-    portafilter2.position.set(0.2, 0.22, 0.07);
+    wand.rotation.z = -0.35;
+    wand.position.set(frontFaceX + 0.04, heightY * 0.42, 0.14);
+    group.add(wand);
 
-    group.add(body, frontPanel, portafilter1, portafilter2);
+    // Tolva de vidrio con café en grano en la parte superior
+    const hopper = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.065, 0.05, 0.12, 16),
+      glassMat,
+    );
+    hopper.position.set(-0.04, heightY + 0.06, -0.07);
+    hopper.castShadow = true;
+
+    const beans = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.058, 0.045, 0.09, 16),
+      beanMat,
+    );
+    beans.position.set(-0.04, heightY + 0.05, -0.07);
+
+    const hopperLid = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.068, 0.068, 0.015, 16),
+      chromeMat,
+    );
+    hopperLid.position.set(-0.04, heightY + 0.125, -0.07);
+
+    group.add(hopper, beans, hopperLid);
+
+    // Tazas de espresso en la bandeja superior
+    [-0.02, 0.06].forEach((tz) => {
+      const cup = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.022, 0.015, 0.035, 12),
+        new THREE.MeshStandardMaterial({ color: "#FFFFFF", roughness: 0.3 }),
+      );
+      cup.position.set(0.04, heightY + 0.018, tz);
+      cup.castShadow = true;
+      group.add(cup);
+    });
+
     this.group.add(group);
   }
 }
