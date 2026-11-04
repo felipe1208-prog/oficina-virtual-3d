@@ -23,19 +23,12 @@ export class AgentCharacter {
     // Locomoción calibrada
     this.waypoints = [];
     this.currentWaypointIndex = 0;
-    this.walkSpeed = 0.55;
-    this.roamTarget = null;
-    this.breakTimer = 0;
-    this.transitionTimer = 0;
-    this.destinationProvider = null;
-
-    // Sensor de evasión lateral
-    this.sensorRange = 1.2;
+    this.walkSpeed = 0.65;
+    this.isPatrolling = false;
     this.avoidanceForce = new THREE.Vector3();
     this.yieldTimer = 0;
 
     this.stateTimer = 16 + Math.random() * 12;
-    this.roamCooldown = 50 + Math.random() * 30;
 
     this.initModel();
     this.initAnimations();
@@ -70,13 +63,6 @@ export class AgentCharacter {
     this.setStatus("WORKING");
   }
 
-  setWalkingPosition(x, z, rotY = Math.PI / 2) {
-    this.model.position.set(x, this.Y_STANDING, z);
-    this.model.rotation.y = rotY;
-    this.setStatus("WALKING");
-    this.playAction("walking", 0.1);
-  }
-
   setWorldAnchors(stationGroup) {
     stationGroup.updateMatrixWorld(true);
     this.seatWorldPos = stationGroup.localToWorld(
@@ -89,6 +75,7 @@ export class AgentCharacter {
 
     this.model.position.copy(this.seatWorldPos);
     this.model.rotation.y = this.seatWorldRotationY;
+    this.setStatus("WORKING");
   }
 
   retargetClip(clip, newName) {
@@ -115,6 +102,7 @@ export class AgentCharacter {
           }
         }
 
+        // Neutralizar desplazamiento de raíz en el plano XZ para no salir de la silla
         const x0 = track.values[0];
         const z0 = track.values[2];
         for (let i = 0; i < track.values.length; i += 3) {
@@ -156,7 +144,7 @@ export class AgentCharacter {
     registerOnce("sitToStand", "sitToStand", 1.0);
     registerOnce("standToSit", "standToSit", 1.0);
     registerLoop("standingIdle", "standingIdle", 0.85);
-    registerLoop("walking", "walking", 1.1);
+    registerLoop("walking", "walking", 1.15);
 
     this.mixer.addEventListener("finished", (e) => {
       const finishedAction = e.action;
@@ -164,10 +152,6 @@ export class AgentCharacter {
         this.playAction("typing", 0.2);
       } else if (finishedAction === this.actions.get("typeToSit")) {
         this.playAction("sittingIdle", 0.25);
-      } else if (finishedAction === this.actions.get("sitToStand")) {
-        this.onStoodUp();
-      } else if (finishedAction === this.actions.get("standToSit")) {
-        this.onSatDown();
       }
     });
 
@@ -196,35 +180,86 @@ export class AgentCharacter {
     }
 
     if (newStatus === "WORKING") {
+      this.model.position.y = this.Y_SITTING;
       if (this.actions.has("sitToType")) {
         this.playAction("sitToType", 0.25);
       } else {
         this.playAction("typing", 0.35);
       }
     } else if (newStatus === "THINKING" || newStatus === "IDLE") {
+      this.model.position.y = this.Y_SITTING;
       if (prevStatus === "WORKING" && this.actions.has("typeToSit")) {
         this.playAction("typeToSit", 0.25);
       } else {
         this.playAction("sittingIdle", 0.35);
       }
+    } else if (newStatus === "WALKING") {
+      this.model.position.y = this.Y_STANDING;
+      this.playAction("walking", 0.2);
     }
   }
 
-  onStoodUp() {
-    this.setStatus("WALKING");
-    this.playAction("walking", 0.22);
-    this.model.position.copy(this.standWorldPos);
-  }
-
-  onSatDown() {
-    this.model.position.copy(this.seatWorldPos);
-    this.model.rotation.y = this.seatWorldRotationY;
-    this.setStatus("WORKING");
-  }
-
-  update(delta, allCharacters = []) {
+  update(delta) {
     if (this.mixer) {
       this.mixer.update(delta);
     }
+
+    if (this.status === "WALKING" && this.waypoints.length > 0) {
+      this.navigateAlongPath(delta);
+    } else if (
+      this.status === "WORKING" ||
+      this.status === "THINKING" ||
+      this.status === "IDLE"
+    ) {
+      this.stateTimer -= delta;
+      if (this.stateTimer <= 0) {
+        this.stateTimer =
+          this.status === "WORKING"
+            ? 12 + Math.random() * 12
+            : 5 + Math.random() * 6;
+        this.setStatus(
+          this.status === "WORKING"
+            ? Math.random() > 0.4
+              ? "THINKING"
+              : "IDLE"
+            : "WORKING",
+        );
+      }
+    }
+  }
+
+  navigateAlongPath(delta) {
+    if (this.currentWaypointIndex >= this.waypoints.length) {
+      if (this.isPatrolling) {
+        this.waypoints.reverse();
+        this.currentWaypointIndex = 0;
+      }
+      return;
+    }
+
+    const currentTarget = this.waypoints[this.currentWaypointIndex];
+    const dir = new THREE.Vector3().subVectors(
+      currentTarget,
+      this.model.position,
+    );
+    dir.y = 0;
+    const distance = dir.length();
+
+    if (distance < 0.25) {
+      this.currentWaypointIndex++;
+      return;
+    }
+
+    dir.normalize();
+
+    // Rotar suavemente hacia el waypoint
+    const targetAngle = Math.atan2(dir.x, dir.z);
+    let diff = targetAngle - this.model.rotation.y;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    this.model.rotation.y += diff * Math.min(delta * 7, 1);
+
+    // Avanzar hacia el objetivo
+    this.model.position.addScaledVector(dir, this.walkSpeed * delta);
   }
 }

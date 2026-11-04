@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { AgentCharacter } from "./AgentCharacter.js";
 
 export class CharacterManager {
@@ -43,43 +44,79 @@ export class CharacterManager {
   initAgents() {
     const rawClips = this.getClips();
 
-    // 1. Dev 1 (Cian / Azul): Pod frontal, sentado en la silla frente al monitor
-    const devBlue = new AgentCharacter(
-      { id: "dev-blue", color: "#0284C7" },
-      this.getModel(),
-      rawClips,
-    );
-    devBlue.setSeatPosition(-6.4, 5.95, 0); // rotY = 0 mira al Norte hacia las pantallas
-    this.scene.add(devBlue.model);
+    // 1. Detectar estaciones de trabajo existentes en la escena
+    const stations = [];
+    this.scene.traverse((obj) => {
+      if (
+        obj.isGroup &&
+        (obj.name.startsWith("station-") || obj.userData?.agentId)
+      ) {
+        stations.push(obj);
+      }
+    });
 
-    // 2. Dev 2 (Morado): Puesto contiguo derecho
-    const devPurple = new AgentCharacter(
-      { id: "dev-purple", color: "#9333EA" },
-      this.getModel(),
-      rawClips,
-    );
-    devPurple.setSeatPosition(-5.3, 5.95, 0);
-    this.scene.add(devPurple.model);
+    // Coordenadas manuales calibradas de respaldo (Sillas del Dev Pod)
+    // Columna Oeste (miran a +X): X = -6.50 | Columna Este (miran a -X): X = -5.30
+    const devConfigs = [
+      {
+        id: "dev-purple",
+        color: "#9333EA", // Morado: Fila Norte, Columna Este (mira al Oeste)
+        pos: { x: -5.3, z: 4.2 },
+        rotY: Math.PI,
+      },
+      {
+        id: "dev-blue",
+        color: "#0284C7", // Cian: Fila Sur, Columna Este (mira al Oeste)
+        pos: { x: -5.3, z: 5.6 },
+        rotY: Math.PI,
+      },
+      {
+        id: "dev-yellow",
+        color: "#EAB308", // Amarillo: Fila Norte, Columna Oeste (mira al Este)
+        pos: { x: -6.5, z: 4.2 },
+        rotY: 0,
+      },
+    ];
 
-    // 3. Dev 3 (Amarillo): Pod central, sentado en su silla
-    const devYellow = new AgentCharacter(
-      { id: "dev-yellow", color: "#EAB308" },
-      this.getModel(),
-      rawClips,
-    );
-    devYellow.setSeatPosition(-5.85, 3.5, 0);
-    this.scene.add(devYellow.model);
+    devConfigs.forEach((cfg, idx) => {
+      const char = new AgentCharacter(
+        { id: cfg.id, color: cfg.color },
+        this.getModel(),
+        rawClips,
+      );
 
-    // 4. Agente Peatonal (Naranja): Pasillo central caminando
+      if (stations[idx]) {
+        // Anclaje automático nativo a la silla del escritorio
+        char.setWorldAnchors(stations[idx]);
+      } else {
+        // Fallback manual con rotación hacia sus monitores
+        char.setSeatPosition(cfg.pos.x, cfg.pos.z, cfg.rotY);
+      }
+
+      this.scene.add(char.model);
+      this.characters.push(char);
+    });
+
+    // 2. Agente Peatonal (Naranja): Patrulla continua de ida y vuelta por el pasillo central
     const agentWalker = new AgentCharacter(
       { id: "agent-walker", color: "#EA580C" },
       this.getModel(),
       rawClips,
     );
-    agentWalker.setWalkingPosition(-2.35, 1.8, Math.PI / 2);
-    this.scene.add(agentWalker.model);
 
-    this.characters.push(devBlue, devPurple, devYellow, agentWalker);
+    // Posición inicial y waypoints de patrulla a lo largo de la alfombra azul (Z = 1.80)
+    agentWalker.model.position.set(-5.5, -0.34, 1.8);
+    agentWalker.waypoints = [
+      new THREE.Vector3(2.2, -0.34, 1.8),
+      new THREE.Vector3(-5.5, -0.34, 1.8),
+    ];
+    agentWalker.isPatrolling = true;
+    agentWalker.currentWaypointIndex = 0;
+    agentWalker.setStatus("WALKING");
+    agentWalker.playAction("walking", 0.1);
+
+    this.scene.add(agentWalker.model);
+    this.characters.push(agentWalker);
   }
 
   update(delta) {
