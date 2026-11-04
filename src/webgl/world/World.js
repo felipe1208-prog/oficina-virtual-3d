@@ -11,18 +11,20 @@ export class World {
     this.scene = this.experience.scene;
     this.resources = this.experience.resources;
 
-    // 1. Estructura base ya aprobada
+    // Estructura arquitectónica aprobada
     this.floor = new Floor(this.scene);
     this.shell = new DioramaShell(this.scene);
     this.carpets = new CarpetSystem(this.scene);
     this.glass = new GlassPartitions(this.scene, this.resources);
     this.interiorWalls = new InteriorWalls(this.scene);
 
-    // 2. ÚNICA ZONA ACTIVA: Despacho del Supervisor
-    this.supervisor = new SupervisorOffice(this.scene, this.resources);
+    // Despacho del Supervisor con circuito cerrado de TV activo
+    this.supervisor = new SupervisorOffice(this.experience);
   }
 
   update(delta) {
-    // Listo para cuando integremos cinemática o agentes
+    if (this.supervisor) {
+      this.supervisor.update(delta);
+    }
   }
 }
